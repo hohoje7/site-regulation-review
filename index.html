@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>부지 규제사항 검토 시스템</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --bg:#eef1f5; --panel:#ffffff; --border:#dfe3ea; --border-strong:#c7cedb; --text:#182233; --muted:#6b7382;
+    --accent:#0f5fd6; --accent-dark:#0b4aa8; --accent-weak:#eaf1fd; --ok:#127a49; --ok-weak:#e7f5ec;
+    --warn:#93600a; --warn-weak:#fbf1de; --bad:#ac2c22; --bad-weak:#fbeae8;
+    --radius:6px; --radius-sm:4px;
+    font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);line-height:1.55;font-size:14px;-webkit-font-smoothing:antialiased;}
+  .skip-nav{position:absolute;top:-40px;left:0;background:var(--accent-dark);color:#fff;padding:10px 18px;font-size:13px;font-weight:700;z-index:2000;transition:top 0.15s;}
+  .skip-nav:focus{top:0;}
+  header{background:#0b2749;color:#fff;padding:20px 28px;border-bottom:3px solid var(--accent);}
+  header h1{margin:0;font-size:19px;font-weight:700;letter-spacing:-0.2px;}
+  header p{margin:5px 0 0;font-size:12.5px;color:#9fb3ce;}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px 20px 56px;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:14px;}
+  .card h2{margin:0 0 4px;font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:9px;letter-spacing:-0.1px;}
+  .card h2 .num{background:var(--accent);color:#fff;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none;}
+  .card .lead{font-size:12px;color:var(--muted);margin:0 0 14px;}
+
+  #server-banner{display:none;background:var(--bad-weak);border:1px solid #eabab5;border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;color:#8a2b2b;font-weight:600;margin-bottom:14px;}
+
+  /* 설정(키) 패널 */
+  .keybox{border:1px solid var(--border-strong);border-left:3px solid var(--accent);background:var(--accent-weak);border-radius:var(--radius-sm);padding:15px 18px;margin-bottom:10px;}
+  .keybox.opt-a{border-left-color:var(--ok);background:#f2f9f4;}
+  .keybox.opt-b{border-left-color:#7a4fae;background:#f5f1fa;}
+  .keybox label{display:block;font-size:13px;font-weight:700;color:#12315c;margin-bottom:6px;}
+  .keybox.opt-a label{color:#12522f;}
+  .keybox.opt-b label{color:#472a70;}
+  .keybox input{width:100%;padding:9px 11px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-size:13.5px;background:#fff;font-family:"SFMono-Regular",Consolas,monospace;}
+  .keybox small{display:block;margin-top:6px;font-size:11.5px;color:var(--muted);}
+  .keybox small a{color:var(--accent);font-weight:600;text-decoration:none;}
+  .keybox small a:hover{text-decoration:underline;}
+  .key-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;margin-left:6px;}
+  .key-status.set{background:var(--ok-weak);color:var(--ok);}
+  .key-status.unset{background:#eef1f5;color:var(--muted);}
+
+  details.other-keys{margin-top:10px;}
+  details.other-keys summary{cursor:pointer;color:var(--muted);font-size:12.5px;font-weight:600;}
+  .field-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+  .field{flex:1;min-width:220px;}
+  .field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px;font-weight:600;}
+  .field input,.field select{width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-size:13.5px;}
+  .field small{display:block;margin-top:4px;color:var(--muted);}
+
+  button.primary{background:var(--accent);color:#fff;border:none;padding:10px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;}
+  button.primary:hover{background:var(--accent-dark);}
+  button.primary:disabled{background:#a9c3ea;cursor:not-allowed;}
+  button.ghost{background:#fff;border:1px solid var(--border-strong);padding:7px 13px;border-radius:var(--radius-sm);font-size:12.5px;cursor:pointer;color:var(--text);}
+  button.ghost:hover{background:#f4f6fa;}
+  button.csv{background:var(--ok);color:#fff;border:none;padding:9px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;}
+  button.csv:hover{background:#0e5f39;}
+  button.small-btn{background:#fff;border:1px solid var(--accent);color:var(--accent);font-size:11px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;white-space:nowrap;}
+  button.small-btn:hover{background:var(--accent-weak);}
+  .actions{margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .hint{font-size:11.5px;color:var(--muted);}
+
+  .mode-tabs{display:flex;gap:0;margin-bottom:0;border-bottom:1px solid var(--border);}
+  .mode-tab{flex:1;text-align:center;padding:10px 4px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);background:transparent;border-bottom:2px solid transparent;margin-bottom:-1px;}
+  .mode-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700;}
+  .mode-panel{display:none;margin-top:16px;}
+  .mode-panel.show{display:block;}
+  .calc-box{background:var(--accent-weak);border-radius:var(--radius-sm);padding:9px 12px;font-size:12px;margin-top:8px;color:var(--accent-dark);}
+
+  .shp-drop{border:1.5px dashed var(--border-strong);border-radius:var(--radius);padding:18px;text-align:center;background:#fafbfc;}
+  .shp-drop.ready{border-color:var(--ok);border-style:solid;background:var(--ok-weak);}
+  .shp-filelist{font-size:12px;color:var(--muted);margin-top:8px;text-align:left;}
+
+  #loading{display:none;text-align:center;padding:26px;color:var(--accent);font-weight:700;font-size:13px;}
+  .spinner{display:inline-block;width:18px;height:18px;border:2.5px solid var(--accent-weak);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:8px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  #results{display:none;}
+  .stat-row{display:flex;gap:1px;flex-wrap:wrap;margin-bottom:16px;background:var(--border);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;}
+  .stat{flex:1;min-width:130px;background:#fff;padding:12px 14px;text-align:center;}
+  .stat .n{font-size:20px;font-weight:800;color:var(--accent);letter-spacing:-0.3px;}
+  .stat .l{font-size:11px;color:var(--muted);margin-top:2px;}
+
+  .addr-warn{background:var(--warn-weak);border-left:3px solid var(--warn);border-radius:var(--radius-sm);padding:10px 13px;font-size:12.5px;color:#6a4a08;margin-bottom:10px;font-weight:600;}
+  #location-map{margin-bottom:16px;}
+  #location-map .map-frame{position:relative;display:inline-block;border:1px solid var(--border-strong);border-radius:var(--radius-sm);overflow:hidden;max-width:100%;}
+  #location-map img{display:block;max-width:100%;height:auto;}
+  #location-map svg{position:absolute;top:0;left:0;pointer-events:none;}
+  .legend{display:flex;align-items:center;flex-wrap:wrap;gap:14px;font-size:11.5px;color:var(--muted);margin-top:8px;}
+  .legend-dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.3px;}
+  th,td{border:1px solid var(--border);padding:6px 9px;text-align:left;}
+  th{background:#f2f4f8;font-weight:700;white-space:nowrap;color:#3a4356;position:sticky;top:0;}
+  tbody tr:nth-child(even){background:#f9fafb;}
+  tbody tr:hover{background:var(--accent-weak);}
+  .table-scroll{overflow-x:auto;margin-top:6px;border:1px solid var(--border);border-radius:var(--radius-sm);}
+  .table-scroll table{border:none;}
+  .table-scroll th,.table-scroll td{border:none;border-bottom:1px solid var(--border);}
+  .pct-full{color:var(--ok);font-weight:700;}
+  .pct-partial{color:var(--warn);font-weight:700;}
+
+  .reg-summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin-top:8px;}
+  .reg-card{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;background:#fafbfc;}
+  .reg-card.hit{border-color:#e3c68a;background:var(--warn-weak);}
+  .reg-card .t{font-weight:600;font-size:12px;color:var(--muted);}
+  .reg-card .p{font-size:18px;font-weight:800;margin-top:3px;color:var(--text);}
+  .reg-card .p.zero{color:var(--muted);font-size:13px;font-weight:600;}
+  .reg-card .lbl{font-size:10.5px;color:var(--muted);margin-top:3px;}
+
+  .procflow{margin-top:10px;}
+  .proc-note{background:var(--warn-weak);border-left:3px solid var(--warn);border-radius:var(--radius-sm);padding:12px 14px;margin-top:14px;font-size:12.5px;color:#5c4310;}
+  .proc-note b{color:#5c4310;}
+  .proc-note ul{margin:8px 0 0;padding-left:18px;}
+  .proc-note li{margin-bottom:5px;}
+
+  .disclaimer{background:#f2f4f8;border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 15px;font-size:11.5px;color:var(--muted);margin-top:14px;}
+  .disclaimer b{color:var(--text);}
+  footer{max-width:1100px;margin:0 auto;padding:0 20px 40px;font-size:11px;color:var(--muted);}
+  a{color:var(--accent);}
+  .badge{font-size:10px;padding:2px 7px;border-radius:3px;font-weight:700;letter-spacing:0.2px;}
+  .badge.real{background:var(--ok-weak);color:var(--ok);}
+  .badge.pending{background:#eef1f5;color:var(--muted);}
+
+  /* 지도 그리기 입력(점/선/면) */
+  .draw-submode{display:flex;gap:6px;margin-bottom:10px;}
+  .draw-submode button{flex:1;padding:8px 6px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:#fff;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;}
+  .draw-submode button.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  #draw-map{height:380px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border-strong);}
+  .draw-points-list{font-size:12px;color:var(--muted);margin-top:6px;}
+  .leaflet-marker-numbered{background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.35);}
+
+  /* 결과 위치도 — 인터랙티브 지도 */
+  #interactive-map{height:440px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border-strong);margin-top:8px;}
+  .map-layer-panel{background:#fff;padding:8px 10px;border-radius:var(--radius-sm);box-shadow:0 1px 6px rgba(20,30,50,0.18);font-size:11.5px;max-height:320px;overflow-y:auto;}
+  .map-layer-panel .grp-title{font-weight:700;color:var(--muted);margin:6px 0 3px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.3px;}
+  .map-layer-panel label{display:flex;align-items:center;gap:5px;padding:2px 0;cursor:pointer;white-space:nowrap;}
+  .map-layer-panel .basemap-row{display:flex;gap:4px;margin-bottom:6px;}
+  .map-layer-panel .basemap-row button{flex:1;font-size:11px;padding:4px;border:1px solid var(--border-strong);border-radius:4px;background:#fff;cursor:pointer;}
+  .map-layer-panel .basemap-row button.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .map-aux-panel{background:#fff;padding:7px 9px;border-radius:var(--radius-sm);box-shadow:0 1px 6px rgba(20,30,50,0.18);font-size:11px;}
+  .map-aux-panel button{width:100%;background:#fff;border:1px solid var(--border-strong);padding:5px 9px;border-radius:4px;font-size:11.5px;cursor:pointer;color:var(--text);}
+  .map-legend-body{margin-top:6px;line-height:1.8;}
+  .map-legend-body:empty{margin-top:0;}
+  .map-legend-body .row{display:flex;align-items:center;gap:6px;white-space:nowrap;}
+  .map-legend-body .swatch{width:14px;height:3px;flex:none;}
+  .map-legend-body .dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .setback-tooltip{font-size:10.5px;font-weight:700;padding:2px 5px;}
+</style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-nav">본문 바로가기</a>
+
+<header>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
+    <div>
+      <h1>부지 규제사항 검토 시스템</h1>
+      <p>지번 · 반경 · 구역계 · 지도입력 — 규제사항 · 전력계통 자동 조회</p>
+    </div>
+    <button id="btn-settings" onclick="openSettingsModal()" title="API Key 설정" style="flex:none;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.25);color:#fff;width:38px;height:38px;border-radius:var(--radius-sm);font-size:16px;cursor:pointer;">⚙</button>
+  </div>
+</header>
+
+<!-- ============ API Key 설정 모달 (기초자료 — 평소엔 숨김, 톱니바퀴 아이콘으로만 접근) ============ -->
+<div id="settings-modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(15,25,40,0.5);z-index:1000;" onclick="if(event.target===this) closeSettingsModal()">
+  <div style="background:#fff;max-width:620px;margin:5vh auto;border-radius:10px;padding:24px 26px;max-height:88vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <h2 style="margin:0;font-size:15.5px;font-weight:700;">API Key 관리</h2>
+      <button onclick="closeSettingsModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">×</button>
+    </div>
+    <p class="hint" style="margin:0 0 14px;">이 브라우저에만 저장됩니다. 한 번 저장하면 다시 열 필요 없음.</p>
+
+    <div class="keybox">
+      <label>브이월드(V-World) <span id="vkey-status" class="key-status unset">미설정</span></label>
+      <input id="key-vworld" type="text" placeholder="예: 1234ABCD-1234-1234-1234-1234ABCD5678" oninput="onKeyInput()">
+      <small><a href="https://www.vworld.kr/dev/v4dv_2ddataguide2_s001.do" target="_blank">키 발급</a> — 지번·용도지역·소유정보·공시지가 조회에 필수</small>
+      <div class="actions">
+        <button class="ghost" onclick="saveKeys()">저장</button>
+        <span class="hint" id="key-save-msg"></span>
+      </div>
+    </div>
+
+    <div class="keybox opt-a">
+      <label>에코뱅크(국립생태원) <span id="ekey-status" class="key-status unset">미설정</span></label>
+      <input id="key-ecobank" type="text" placeholder="EcoBank 발급 인증키(serviceKey)" oninput="onKeyInput()">
+      <small><a href="https://www.nie-ecobank.kr/data/api/writeForm.do" target="_blank">키 발급</a> · <a href="https://www.nie-ecobank.kr/data/api/intrcn.do" target="_blank">사용법</a> — 백두대간·생태계정밀조사 등 그 외 에코뱅크 API용(현재 화면에서는 미사용, 향후 확장용 보관) (선택)</small>
+      <div class="actions">
+        <button class="ghost" onclick="saveKeys()">저장</button>
+      </div>
+    </div>
+
+    <div class="keybox opt-b">
+      <label>한국전력공사 분산전원연계정보 <span id="kkey-status" class="key-status unset">미설정</span></label>
+      <input id="key-kepco" type="text" placeholder="발급받은 API 인증키(40자리)" oninput="onKeyInput()">
+      <small><a href="https://bigdata.kepco.co.kr" target="_blank">키 발급</a> — 변전소·배전선로 여유용량 참고자료 표시 (선택)</small>
+      <div class="actions">
+        <button class="ghost" onclick="saveKeys()">저장</button>
+      </div>
+    </div>
+
+    <details class="other-keys">
+      <summary>국가법령정보센터 (선택)</summary>
+      <div class="field-row">
+        <div class="field">
+          <label>인증키(OC)</label>
+          <input id="key-law" type="text" placeholder="open.law.go.kr 이메일 ID">
+          <small>법령 조문 자동 인용용 — 없어도 수동 확인 가능. <a href="https://open.law.go.kr/LSO/openApi/guideList.do" target="_blank">키 발급</a></small>
+        </div>
+      </div>
+      <div class="actions"><button class="ghost" onclick="saveKeys()">저장</button></div>
+    </details>
+
+    <details class="other-keys" open>
+      <summary>그 외 사이트 API 키 추가</summary>
+      <div class="hint" style="margin-top:8px;">필요한 사이트의 이름·링크·키를 직접 추가해 보관할 수 있습니다.</div>
+      <div class="field-row" style="margin-top:10px;">
+        <div class="field" style="flex:1.2;">
+          <label>사이트 이름</label>
+          <input id="ck-name" type="text" placeholder="예: 국가공간정보포털">
+        </div>
+        <div class="field" style="flex:1.5;">
+          <label>신청 링크(선택)</label>
+          <input id="ck-url" type="text" placeholder="https://...">
+        </div>
+        <div class="field" style="flex:1.5;">
+          <label>API 키 값</label>
+          <input id="ck-value" type="text" placeholder="발급받은 키 값">
+        </div>
+        <div class="field" style="flex:none;align-self:flex-end;">
+          <button class="ghost" onclick="addCustomKey()">추가</button>
+        </div>
+      </div>
+      <div id="custom-keys-list" style="margin-top:12px;"></div>
+    </details>
+  </div>
+</div>
+
+<div class="wrap" id="main-content">
+
+  <div id="server-banner"></div>
+
+  <div id="key-missing-notice" style="display:none;" class="addr-warn">브이월드 API Key가 필요합니다 — 오른쪽 위 <b>⚙</b>을 눌러 입력해주세요.</div>
+
+  <div class="card">
+    <h2><span class="num">1</span> 검색 대상 선택</h2>
+    <div class="mode-tabs">
+      <div class="mode-tab active" id="tab-jibun" onclick="setMode('jibun')">지번</div>
+      <div class="mode-tab" id="tab-radius" onclick="setMode('radius')">반경 일대</div>
+      <div class="mode-tab" id="tab-shp" onclick="setMode('shp')">구역계 SHP</div>
+      <div class="mode-tab" id="tab-draw" onclick="setMode('draw')">지도에서 선택</div>
+    </div>
+
+    <div class="mode-panel show" id="panel-jibun">
+      <div class="field-row">
+        <div class="field" style="flex:2;">
+          <label>지번 주소 (리·동까지 입력하면 동명 지번 오류를 줄일 수 있습니다)</label>
+          <input id="input-jibun" type="text" value="전라남도 신안군 안좌면 자라리 산75-1">
+        </div>
+        <div class="field">
+          <label>사업 유형</label>
+          <select id="input-type">
+            <option>태양광</option>
+            <option selected>육상풍력</option>
+            <option>해상풍력</option>
+            <option>기타</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="mode-panel" id="panel-radius">
+      <div class="field-row">
+        <div class="field" style="flex:2;">
+          <label>기준 지번 주소</label>
+          <input id="input-jibun-radius" type="text" value="전라남도 신안군 안좌면 자라리 산75-1">
+        </div>
+        <div class="field">
+          <label>사업 유형</label>
+          <select id="input-type-radius">
+            <option selected>태양광</option>
+            <option>육상풍력</option>
+            <option>해상풍력</option>
+            <option>기타</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>범위 입력 방식</label>
+          <select id="radius-mode" onchange="updateRadiusCalc()">
+            <option value="radius" selected>반경 거리 직접입력(m)</option>
+            <option value="area">면적 기준(㎡ 또는 평)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>값</label>
+          <input id="radius-value" type="number" value="85" min="1" oninput="updateRadiusCalc()">
+        </div>
+        <div class="field" id="radius-unit-field" style="display:none;">
+          <label>단위</label>
+          <select id="radius-unit" onchange="updateRadiusCalc()">
+            <option value="sqm">㎡</option>
+            <option value="pyeong">평</option>
+          </select>
+        </div>
+      </div>
+      <div class="calc-box" id="radius-calc-result"></div>
+    </div>
+
+    <div class="mode-panel" id="panel-shp">
+      <div class="field-row">
+        <div class="field">
+          <label>사업 유형</label>
+          <select id="input-type-shp">
+            <option>태양광</option>
+            <option selected>육상풍력</option>
+            <option>해상풍력</option>
+            <option>기타</option>
+          </select>
+        </div>
+      </div>
+      <div class="shp-drop" id="shp-drop">
+        <div>구역계 SHP 파일 세트를 한 번에 선택하세요<br>
+        <small>.shp / .shx / .dbf / .prj 필수 (.cpg는 있으면 자동 포함)</small></div>
+        <input id="input-shp" type="file" accept=".shp,.shx,.dbf,.prj,.cpg" multiple style="margin-top:12px;" onchange="handleShpFiles(event)">
+        <div class="shp-filelist" id="shp-filelist"></div>
+      </div>
+      <div class="hint" style="margin-top:8px;">좌표계(.prj) 자동 인식·변환 — TM·WGS84 모두 지원, 실제 폴리곤 형상 그대로 분석</div>
+    </div>
+
+    <div class="mode-panel" id="panel-draw">
+      <div class="field-row">
+        <div class="field">
+          <label>사업 유형</label>
+          <select id="input-type-draw">
+            <option>태양광</option>
+            <option selected>육상풍력</option>
+            <option>해상풍력</option>
+            <option>기타</option>
+          </select>
+        </div>
+        <div class="field" id="draw-radius-field">
+          <label>기본 반경(m)</label>
+          <input id="draw-radius" type="number" value="85" min="1">
+          <small>지점별로 반경을 따로 수정할 수 있습니다</small>
+        </div>
+      </div>
+      <div class="draw-submode">
+        <button id="draw-sub-point" class="active" onclick="setDrawSubmode('point')">점 — 단일 지점</button>
+        <button id="draw-sub-line" onclick="setDrawSubmode('line')">선 — 지점별 반경</button>
+        <button id="draw-sub-polygon" onclick="setDrawSubmode('polygon')">면 — 직접 그린 구역계</button>
+      </div>
+      <div class="hint" id="draw-instruction" style="margin-bottom:6px;">지도를 클릭해서 검토할 지점을 찍어주세요.</div>
+      <div id="draw-map"></div>
+      <div class="draw-points-list" id="draw-points-list"></div>
+      <div class="actions" style="margin-top:10px;">
+        <button class="ghost" onclick="undoDrawPoint()">마지막 점 취소</button>
+        <button class="ghost" onclick="clearDrawPoints()">전체 초기화</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="btn-search" onclick="startSearch()">조회 시작</button>
+      <span class="hint">구역계 SHP는 필지 수에 따라 몇 초~수십 초 걸릴 수 있습니다</span>
+    </div>
+  </div>
+
+  <div id="loading"><span class="spinner"></span>실제 데이터 조회 및 정밀 분석 중…</div>
+
+  <div id="results">
+    <div class="card">
+      <h2><span class="num">2</span> 부지 개요 및 위치도</h2>
+      <div id="addr-warn-box"></div>
+      <div id="location-map"></div>
+      <div class="stat-row" id="stat-row"></div>
+      <div class="hint" style="margin:14px 0 4px;font-weight:700;color:var(--text);">인터랙티브 지도 — 배경·규제 레이어 전환 가능(위 위치도와 동일 경계·스케일)</div>
+      <div id="interactive-map"></div>
+    </div>
+
+    <div class="card" id="parcel-result-card">
+      <h2><span class="num">3</span> 편입 지번 발취 결과 <span class="badge real">실측 API</span></h2>
+      <p class="lead">공부상면적(지적공부 등록면적)과 편입면적(실제 겹치는 면적)을 구분 표기</p>
+      <div class="actions">
+        <button class="csv" onclick="downloadCsv()">CSV 다운로드</button>
+      </div>
+      <div class="table-scroll" id="parcel-table"></div>
+    </div>
+
+    <div class="card" id="reg-summary-card">
+      <h2><span class="num">4</span> 규제사항 요약</h2>
+      <p class="lead">구역계 전체 기준 편입비율</p>
+      <div id="reg-summary-body"></div>
+    </div>
+
+    <div class="card" id="setback-analysis-card">
+      <h2><span class="num">5</span> 이격거리 분석 <span class="badge real">지적도 실측</span></h2>
+      <p class="lead">「신에너지 및 재생에너지 개발·이용·보급 촉진법 시행령」 제27조의3 기준(사업유형별 검토 반경 자동 적용) — 조례상 실제 이격거리 대조용 참고자료. 매칭된 시설은 위 인터랙티브 지도에 굵은 점선 외곽선으로 표시됩니다(범례 참고, 화면 밖이면 지도의 '전체 범위 보기' 버튼 사용).</p>
+      <div id="setback-analysis-body"></div>
+    </div>
+
+    <div class="card" id="aspect-analysis-card">
+      <h2><span class="num">6</span> 사면방향 분석 <span class="badge real">공개 DEM</span></h2>
+      <p class="lead">태양광 배치 참고 — 남향(S/SE/SW) 사면 비율</p>
+      <div id="aspect-analysis-body"></div>
+    </div>
+
+    <div class="card" id="power-grid-card" style="display:none;">
+      <h2><span class="num">7</span> 전력계통 연계정보 <span class="badge real">한전 실측 API</span></h2>
+      <p class="lead">참고자료 — 실제 송전선로·변전소 좌표는 보안시설로 비공개되어 행정구역 단위로 반경 검색합니다. 지정 반경 내 없으면 자동으로 범위를 넓혀 찾습니다(검색범위는 위 인터랙티브 지도에 보라색 원·점으로 표시, 반경이 커서 화면 밖이면 지도의 '전체 범위 보기' 버튼 사용)</p>
+      <div class="actions" style="margin-top:0;margin-bottom:10px;">
+        <span class="hint">검색 반경</span>
+        <input id="power-grid-radius" type="number" value="5" min="0.5" max="30" step="0.5" style="width:64px;padding:6px 8px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-size:13px;">
+        <span class="hint">km</span>
+        <button class="ghost" onclick="searchPowerGridRadius()">재조회</button>
+        <button class="ghost" onclick="openRe100market()">re100market에서 확인 ↗</button>
+      </div>
+      <div class="hint" id="re100market-hint" style="display:none;margin-bottom:8px;"></div>
+      <div id="power-grid-body"></div>
+    </div>
+
+    <div class="card" id="procedure-card">
+      <h2><span class="num">8</span> 인허가 절차도 및 특이사항</h2>
+      <div id="procedure-diagram"></div>
+    </div>
+
+    <div class="disclaimer">본 결과는 공개 데이터 기반 <b>1차 스크리닝 자료</b>입니다. 사업유형별 관련 법령 및 <b>관할 지자체 조례</b>는 별도 확인이 필요하며, 최종 판단과 법적 책임은 검토자(사람)에게 있습니다. <b>소유자 실명은 어떤 항목에도 포함되지 않습니다.</b></div>
+  </div>
+
+</div>
+
+<footer>
+  260910.부지규제검토시스템.V17.html · <a href="260910.과제정의서.V4.md" target="_blank">과제정의서</a> ·
+  <a href="260907.요구사항정의서(PRD).V1.md" target="_blank">PRD V1</a><br>
+  입력한 API 키와 업로드 파일은 이 컴퓨터의 로컬 서버 안에서만 처리되며 외부로 전송되지 않습니다.
+</footer>
+
+<script>
+// ------------------------------------------------------------------
+// 배포 설정 — 화면(정적 파일)과 분석 서버(API)가 서로 다른 곳에서 서빙될 때
+// (예: 화면은 Vercel, 서버는 사용자 PC + ngrok 터널) 이 값만 그 서버 주소로 바꾸면 됨.
+// 같은 서버가 화면도 같이 서빙하는 로컬 테스트 환경에서는 빈 문자열 그대로 두면
+// 지금 페이지와 같은 주소로 요청이 감(기존 동작과 동일).
+// ------------------------------------------------------------------
+const API_BASE = 'https://confident-briskness-estrogen.ngrok-free.dev';
+// ------------------------------------------------------------------
+// 키 저장/불러오기
+// ------------------------------------------------------------------
+function refreshStatusBadge(inputId, statusId){
+  const has = !!document.getElementById(inputId).value.trim();
+  const el = document.getElementById(statusId);
+  el.textContent = has ? '저장됨' : '미설정';
+  el.className = 'key-status ' + (has ? 'set' : 'unset');
+}
+function onKeyInput(){
+  const v = document.getElementById('key-vworld').value.trim();
+  document.getElementById('vkey-status').textContent = v ? '입력됨 (저장 버튼을 눌러주세요)' : '미설정';
+  document.getElementById('vkey-status').className = 'key-status ' + (v ? 'set' : 'unset');
+  const e = document.getElementById('key-ecobank').value.trim();
+  document.getElementById('ekey-status').textContent = e ? '입력됨 (저장 버튼을 눌러주세요)' : '미설정';
+  document.getElementById('ekey-status').className = 'key-status ' + (e ? 'set' : 'unset');
+  const p = document.getElementById('key-kepco').value.trim();
+  document.getElementById('kkey-status').textContent = p ? '입력됨 (저장 버튼을 눌러주세요)' : '미설정';
+  document.getElementById('kkey-status').className = 'key-status ' + (p ? 'set' : 'unset');
+}
+function loadKeys(){
+  document.getElementById('key-vworld').value = localStorage.getItem('key_vworld') || '';
+  document.getElementById('key-law').value = localStorage.getItem('key_law') || '';
+  document.getElementById('key-ecobank').value = localStorage.getItem('key_ecobank') || '';
+  document.getElementById('key-kepco').value = localStorage.getItem('key_kepco') || '';
+  refreshStatusBadge('key-vworld', 'vkey-status');
+  refreshStatusBadge('key-ecobank', 'ekey-status');
+  refreshStatusBadge('key-kepco', 'kkey-status');
+  renderCustomKeys();
+  updateKeyMissingNotice();
+}
+function saveKeys(){
+  localStorage.setItem('key_vworld', document.getElementById('key-vworld').value.trim());
+  localStorage.setItem('key_law', document.getElementById('key-law').value.trim());
+  localStorage.setItem('key_ecobank', document.getElementById('key-ecobank').value.trim());
+  localStorage.setItem('key_kepco', document.getElementById('key-kepco').value.trim());
+  document.getElementById('key-save-msg').textContent = '저장됨 (이 브라우저에만 보관)';
+  refreshStatusBadge('key-vworld', 'vkey-status');
+  refreshStatusBadge('key-ecobank', 'ekey-status');
+  refreshStatusBadge('key-kepco', 'kkey-status');
+  updateKeyMissingNotice();
+  checkServerHealth();
+}
+function updateKeyMissingNotice(){
+  document.getElementById('key-missing-notice').style.display = localStorage.getItem('key_vworld') ? 'none' : 'block';
+}
+function openSettingsModal(){
+  document.getElementById('settings-modal-backdrop').style.display = 'block';
+}
+function closeSettingsModal(){
+  document.getElementById('settings-modal-backdrop').style.display = 'none';
+}
+loadKeys();
+// 키가 아예 없으면(첫 방문) 바로 설정창을 열어준다
+if(!localStorage.getItem('key_vworld')) openSettingsModal();
+
+// ------------------------------------------------------------------
+// 그 외 사이트 API 키 — 이름/신청링크/키값을 자유롭게 추가·삭제
+// ------------------------------------------------------------------
+function loadCustomKeys(){
+  try{ return JSON.parse(localStorage.getItem('custom_api_keys') || '[]'); }catch(e){ return []; }
+}
+function saveCustomKeys(list){
+  localStorage.setItem('custom_api_keys', JSON.stringify(list));
+}
+function renderCustomKeys(){
+  const list = loadCustomKeys();
+  const el = document.getElementById('custom-keys-list');
+  if(!list.length){ el.innerHTML = '<div class="hint">아직 추가된 항목이 없습니다.</div>'; return; }
+  el.innerHTML = list.map((k, i) => `
+    <div class="keybox" style="padding:12px 14px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div>
+          <b>${escapeHtml(k.name)}</b>
+          ${k.url ? ` · <a href="${escapeHtml(k.url)}" target="_blank">신청/안내 페이지 열기</a>` : ''}
+        </div>
+        <button class="ghost" onclick="deleteCustomKey(${i})">삭제</button>
+      </div>
+      <input type="text" value="${escapeHtml(k.value)}" style="margin-top:8px;font-family:monospace;"
+             oninput="updateCustomKeyValue(${i}, this.value)">
+    </div>
+  `).join('');
+}
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function addCustomKey(){
+  const name = document.getElementById('ck-name').value.trim();
+  const url = document.getElementById('ck-url').value.trim();
+  const value = document.getElementById('ck-value').value.trim();
+  if(!name){ alert('사이트 이름을 입력해주세요.'); return; }
+  const list = loadCustomKeys();
+  list.push({name, url, value});
+  saveCustomKeys(list);
+  document.getElementById('ck-name').value = '';
+  document.getElementById('ck-url').value = '';
+  document.getElementById('ck-value').value = '';
+  renderCustomKeys();
+}
+function updateCustomKeyValue(idx, value){
+  const list = loadCustomKeys();
+  if(list[idx]){ list[idx].value = value; saveCustomKeys(list); }
+}
+function deleteCustomKey(idx){
+  const list = loadCustomKeys();
+  list.splice(idx, 1);
+  saveCustomKeys(list);
+  renderCustomKeys();
+}
+
+// ------------------------------------------------------------------
+// 서버 상태 확인 — 조용히 실패하지 않도록 항상 배너로 알림
+// ------------------------------------------------------------------
+async function checkServerHealth(){
+  const banner = document.getElementById('server-banner');
+  try{
+    const res = await fetch(API_BASE + '/health', {cache:'no-store', headers:{'ngrok-skip-browser-warning':'1'}});
+    if(res.ok){ banner.style.display = 'none'; return true; }
+    throw new Error('HTTP ' + res.status);
+  }catch(e){
+    banner.style.display = 'block';
+    banner.innerHTML = '로컬 서버에 연결할 수 없습니다. <b>260907.서버시작.bat</b>을 더블클릭해서 서버를 켜주세요. (켜져 있는데도 보이면 새로고침 F5)';
+    return false;
+  }
+}
+checkServerHealth();
+setInterval(checkServerHealth, 15000);
+
+// ------------------------------------------------------------------
+// 모드 전환
+// ------------------------------------------------------------------
+let currentMode = 'jibun';
+function setMode(mode){
+  currentMode = mode;
+  ['jibun','radius','shp','draw'].forEach(m=>{
+    document.getElementById('tab-'+m).classList.toggle('active', m===mode);
+    document.getElementById('panel-'+m).classList.toggle('show', m===mode);
+  });
+  if(mode === 'radius') updateRadiusCalc();
+  if(mode === 'draw') initDrawMap();
+}
+function calcRadius(mode, value, unit){
+  if(mode === 'radius') return {radius: value, areaSqm: Math.PI*value*value};
+  const areaSqm = (unit === 'pyeong') ? value*3.305785 : value;
+  return {radius: Math.sqrt(areaSqm/Math.PI), areaSqm};
+}
+function updateRadiusCalc(){
+  const mode = document.getElementById('radius-mode').value;
+  const value = parseFloat(document.getElementById('radius-value').value) || 0;
+  document.getElementById('radius-unit-field').style.display = (mode==='area') ? 'block' : 'none';
+  const {radius, areaSqm} = calcRadius(mode, value, document.getElementById('radius-unit').value);
+  document.getElementById('radius-calc-result').textContent =
+    `→ 계산된 검색 반경: 약 ${radius.toFixed(1)}m (면적 약 ${Math.round(areaSqm).toLocaleString()}㎡, 원형 버퍼)`;
+}
+updateRadiusCalc();
+
+// ------------------------------------------------------------------
+// 브이월드 배경지도(WMTS) — 인터랙티브 지도(그리기 입력 + 결과 위치도) 공용.
+// 실측 확인: 경로 순서가 일반적인 {z}/{x}/{y}가 아니라 {z}/{y}/{x}임(브이월드 고유 방식).
+// ------------------------------------------------------------------
+function vworldTileLayer(type){
+  const key = localStorage.getItem('key_vworld') || '';
+  const ext = type === 'Satellite' ? 'jpeg' : 'png';
+  return L.tileLayer(
+    `https://api.vworld.kr/req/wmts/1.0.0/${encodeURIComponent(key)}/${type}/{z}/{y}/{x}.${ext}`,
+    { maxZoom: 19, minZoom: 6, attribution: '&copy; VWorld', tileSize: 256 }
+  );
+}
+// 지적도 등 브이월드 개별 레이어를 지도 위에 겹쳐 볼 수 있는 WMS 오버레이 목록
+// (기존 분석에 쓰는 것과 동일한 typename — 화면에서 켜고 끌 수 있게).
+const OVERLAY_LAYERS = [
+  {group:'지적·용도', label:'연속지적도', typename:'lp_pa_cbnd_bubun', style:'lp_pa_cbnd_bubun', source:'vworld'},
+  {group:'지적·용도', label:'도시지역', typename:'lt_c_uq111', style:'lt_c_uq111', source:'vworld'},
+  {group:'지적·용도', label:'관리지역', typename:'lt_c_uq112', style:'lt_c_uq112', source:'vworld'},
+  {group:'지적·용도', label:'농림지역', typename:'lt_c_uq113', style:'lt_c_uq113', source:'vworld'},
+  {group:'지적·용도', label:'자연환경보전지역', typename:'lt_c_uq114', style:'lt_c_uq114', source:'vworld'},
+  {group:'용도지구·계획', label:'지구단위계획구역', typename:'lt_c_upisuq161', style:'lt_c_upisuq161', source:'vworld'},
+  {group:'용도지구·계획', label:'도시계획(도로)', typename:'lt_c_upisuq151', style:'lt_c_upisuq151', source:'vworld'},
+  {group:'용도지구·계획', label:'도시자연공원구역', typename:'lt_c_uq162', style:'lt_c_uq162', source:'vworld'},
+  {group:'산림·농지', label:'농업진흥지역', typename:'lt_c_agrixue101', style:'lt_c_agrixue101', source:'vworld'},
+  {group:'산림·농지', label:'산림보호구역', typename:'lt_c_uf151', style:'lt_c_uf151', source:'vworld'},
+  {group:'산림·농지', label:'백두대간보호구역', typename:'lt_c_uf901', style:'lt_c_uf901', source:'vworld'},
+  {group:'기타규제', label:'가축사육제한구역', typename:'lt_c_um000', style:'lt_c_um000', source:'vworld'},
+  {group:'기타규제', label:'개발제한구역', typename:'lt_c_ud801', style:'lt_c_ud801', source:'vworld'},
+  {group:'기타규제', label:'상수원보호구역', typename:'lt_c_um710', style:'lt_c_um710', source:'vworld'},
+  {group:'기타규제', label:'사업지구(택지개발등)', typename:'lt_c_lhzone', style:'lt_c_lhzone', source:'vworld'},
+];
+function overlayWmsLayer(def){
+  const key = localStorage.getItem('key_vworld') || '';
+  return L.tileLayer.wms('https://api.vworld.kr/req/wms', {
+    layers: def.typename, styles: def.style || def.typename, version: '1.3.0',
+    format: 'image/png', transparent: true, key: key, maxZoom: 19, minZoom: 10,
+  });
+}
+function buildLayerControlPanel(map, overlayState){
+  // Leaflet 기본 L.control.layers 대신, 그룹 헤더가 있는 커스텀 체크박스 패널을 직접 만든다
+  // (요청사항: 브이월드에서 보고싶은 분류를 골라 켜고 끌 수 있게).
+  const groups = {};
+  OVERLAY_LAYERS.forEach(l => { (groups[l.group] = groups[l.group] || []).push(l); });
+  let html = '<div class="basemap-row" id="basemap-row"></div>';
+  for(const g in groups){
+    html += `<div class="grp-title">${g}</div>`;
+    groups[g].forEach(l => {
+      html += `<label><input type="checkbox" data-typename="${l.typename}" onchange="toggleOverlayLayer(this)"> ${l.label}</label>`;
+    });
+  }
+  const div = L.DomUtil.create('div', 'map-layer-panel');
+  div.innerHTML = html;
+  L.DomEvent.disableClickPropagation(div);
+  L.DomEvent.disableScrollPropagation(div);
+  const ctl = L.control({position: 'topright'});
+  ctl.onAdd = () => div;
+  ctl.addTo(map);
+  ['Base','Satellite','Hybrid'].forEach(t => {
+    const btn = document.createElement('button');
+    btn.textContent = {Base:'일반',Satellite:'위성',Hybrid:'하이브리드'}[t];
+    btn.className = (t === overlayState.currentBase) ? 'active' : '';
+    btn.onclick = () => switchBasemap(map, overlayState, t);
+    div.querySelector('#basemap-row').appendChild(btn);
+  });
+}
+function switchBasemap(map, state, type){
+  if(state.baseLayer) map.removeLayer(state.baseLayer);
+  state.baseLayer = vworldTileLayer(type);
+  state.baseLayer.addTo(map);
+  state.currentBase = type;
+  document.querySelectorAll('.map-layer-panel .basemap-row button').forEach(b => {
+    b.classList.toggle('active', b.textContent === {Base:'일반',Satellite:'위성',Hybrid:'하이브리드'}[type]);
+  });
+}
+function toggleOverlayLayer(checkbox){
+  const typename = checkbox.dataset.typename;
+  const key = checkbox.dataset.mapKey || 'draw';
+  const state = key === 'draw' ? drawMapState : resultMapState;
+  if(!state) return;
+  if(checkbox.checked){
+    const def = OVERLAY_LAYERS.find(l => l.typename === typename);
+    const layer = overlayWmsLayer(def);
+    layer.addTo(state.map);
+    state.overlays[typename] = layer;
+  } else {
+    if(state.overlays[typename]){ state.map.removeLayer(state.overlays[typename]); delete state.overlays[typename]; }
+  }
+}
+
+// ------------------------------------------------------------------
+// 검색 대상 ④ 지도에서 선택 — 점/선/면 그리기
+// ------------------------------------------------------------------
+let drawMapState = null; // {map, baseLayer, overlays, currentBase}
+let drawSubmode = 'point';
+let drawPoints = []; // [{lat,lng,marker}]
+let drawShapeLayer = null;
+
+function initDrawMap(){
+  if(drawMapState) { setTimeout(() => drawMapState.map.invalidateSize(), 50); return; }
+  const map = L.map('draw-map', {zoomControl: true}).setView([34.718, 126.087], 15);
+  drawMapState = {map, baseLayer: null, overlays: {}, currentBase: 'Satellite'};
+  switchBasemap(map, drawMapState, 'Satellite'); // 지도에서 선택 시 첫 화면은 위성영상이 기본
+  buildLayerControlPanel(map, drawMapState);
+  document.querySelectorAll('#draw-map .map-layer-panel input[type=checkbox]').forEach(cb => cb.dataset.mapKey = 'draw');
+  map.on('click', onDrawMapClick);
+  setTimeout(() => map.invalidateSize(), 50);
+}
+function numberedIcon(n){
+  return L.divIcon({className:'', html:`<div class="leaflet-marker-numbered">${n}</div>`, iconSize:[24,24], iconAnchor:[12,12]});
+}
+function setDrawSubmode(mode){
+  drawSubmode = mode;
+  ['point','line','polygon'].forEach(m => document.getElementById('draw-sub-'+m).classList.toggle('active', m===mode));
+  const instr = {
+    point: '지도를 클릭해서 검토할 지점을 한 곳 찍어주세요. 그 지점 기준 반경으로 검색합니다.',
+    line: '지도를 순서대로 여러 번 클릭하세요. 클릭한 순서대로 번호가 매겨지고, 각 지점마다 반경 검색을 따로 수행합니다.',
+    polygon: '지도를 클릭해서 구역계 외곽선을 그려주세요(3개 이상). 마지막에 첫 점과 자동으로 이어집니다.',
+  };
+  document.getElementById('draw-instruction').textContent = instr[mode];
+  document.getElementById('draw-radius-field').style.display = (mode === 'polygon') ? 'none' : 'block';
+  clearDrawPoints();
+}
+function onDrawMapClick(e){
+  if(drawSubmode === 'point' && drawPoints.length >= 1){
+    clearDrawPoints();
+  }
+  const n = drawPoints.length + 1;
+  const marker = L.marker(e.latlng, {icon: numberedIcon(n)}).addTo(drawMapState.map);
+  const defaultRadius = parseFloat(document.getElementById('draw-radius').value) || 85;
+  drawPoints.push({lat: e.latlng.lat, lng: e.latlng.lng, marker, radius: defaultRadius});
+  redrawDrawShape();
+  renderDrawPointsList();
+}
+function redrawDrawShape(){
+  if(drawShapeLayer){ drawMapState.map.removeLayer(drawShapeLayer); drawShapeLayer = null; }
+  const latlngs = drawPoints.map(p => [p.lat, p.lng]);
+  if(drawSubmode === 'line' && latlngs.length >= 2){
+    drawShapeLayer = L.polyline(latlngs, {color:'#ff3b30', weight:3});
+    drawShapeLayer.addTo(drawMapState.map);
+  } else if(drawSubmode === 'polygon' && latlngs.length >= 2){
+    drawShapeLayer = L.polygon(latlngs, {color:'#ff3b30', weight:2.5, fillOpacity:0.12});
+    drawShapeLayer.addTo(drawMapState.map);
+  }
+}
+function renderDrawPointsList(){
+  const el = document.getElementById('draw-points-list');
+  if(!drawPoints.length){ el.innerHTML = ''; return; }
+  if(drawSubmode === 'polygon'){
+    el.innerHTML = drawPoints.map((p,i) => `#${i+1}: ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`).join(' · ');
+    return;
+  }
+  // 점/선 모드 — 지점마다 검토 반경을 개별로 입력·수정할 수 있는 목록
+  el.innerHTML = `
+    <div class="table-scroll" style="margin-top:6px;">
+      <table><tr><th>번호</th><th>좌표</th><th>검토 반경(m)</th></tr>
+        ${drawPoints.map((p,i) => `
+          <tr>
+            <td>#${i+1}</td>
+            <td>${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}</td>
+            <td><input type="number" min="1" value="${p.radius}" style="width:90px;padding:4px 6px;"
+                  onchange="updateDrawPointRadius(${i}, this.value)"></td>
+          </tr>`).join('')}
+      </table>
+    </div>`;
+}
+function updateDrawPointRadius(i, value){
+  const r = parseFloat(value) || 1;
+  if(drawPoints[i]) drawPoints[i].radius = r;
+}
+function undoDrawPoint(){
+  const p = drawPoints.pop();
+  if(p){ drawMapState.map.removeLayer(p.marker); }
+  // 번호 재부여
+  drawPoints.forEach((p,i) => p.marker.setIcon(numberedIcon(i+1)));
+  redrawDrawShape();
+  renderDrawPointsList();
+}
+function clearDrawPoints(){
+  drawPoints.forEach(p => drawMapState.map.removeLayer(p.marker));
+  drawPoints = [];
+  if(drawShapeLayer){ drawMapState.map.removeLayer(drawShapeLayer); drawShapeLayer = null; }
+  renderDrawPointsList();
+}
+
+// ------------------------------------------------------------------
+// SHP 파일 업로드(여러 파일 -> base64로 서버 전송)
+// ------------------------------------------------------------------
+let pendingShpFiles = null;
+function handleShpFiles(evt){
+  const files = Array.from(evt.target.files);
+  const need = ['shp','shx','dbf','prj'];
+  const byExt = {};
+  files.forEach(f => { const ext = f.name.split('.').pop().toLowerCase(); byExt[ext] = f; });
+  const missing = need.filter(e => !byExt[e]);
+  const listEl = document.getElementById('shp-filelist');
+  const dropEl = document.getElementById('shp-drop');
+  if(missing.length){
+    listEl.innerHTML = `필수 파일 누락: ${missing.join(', ')} — 4개를 함께 선택해주세요`;
+    dropEl.classList.remove('ready');
+    pendingShpFiles = null;
+    return;
+  }
+  pendingShpFiles = byExt;
+  dropEl.classList.add('ready');
+  listEl.innerHTML = '확인됨: ' + files.map(f=>f.name).join(', ');
+}
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ------------------------------------------------------------------
+// 조회 시작 -> /api/analyze 호출
+// ------------------------------------------------------------------
+async function startSearch(){
+  const key = localStorage.getItem('key_vworld');
+  if(!key){ openSettingsModal(); alert('먼저 브이월드 API Key를 입력하고 저장해주세요.'); return; }
+  const ok = await checkServerHealth();
+  if(!ok){ alert('로컬 서버에 연결되지 않았습니다. 260907.서버시작.bat 을 실행해주세요.'); return; }
+
+  let cfg = { vkey: key };
+  let businessType = '';
+  if(currentMode === 'jibun'){
+    const jibun = document.getElementById('input-jibun').value.trim();
+    if(!jibun){ alert('지번 주소를 입력해주세요.'); return; }
+    cfg.mode = 'jibun'; cfg.jibun = jibun;
+    businessType = document.getElementById('input-type').value;
+  } else if(currentMode === 'radius'){
+    const jibun = document.getElementById('input-jibun-radius').value.trim();
+    if(!jibun){ alert('기준 지번 주소를 입력해주세요.'); return; }
+    const mode = document.getElementById('radius-mode').value;
+    const value = parseFloat(document.getElementById('radius-value').value) || 0;
+    const unit = document.getElementById('radius-unit').value;
+    const {radius} = calcRadius(mode, value, unit);
+    cfg.mode = 'radius'; cfg.jibun = jibun; cfg.radiusM = radius;
+    businessType = document.getElementById('input-type-radius').value;
+  } else if(currentMode === 'shp'){
+    if(!pendingShpFiles){ alert('구역계 SHP 파일(.shp/.shx/.dbf/.prj)을 먼저 선택해주세요.'); return; }
+    cfg.mode = 'shp';
+    cfg.shpFiles = {};
+    for(const ext of ['shp','shx','dbf','prj','cpg']){
+      if(pendingShpFiles[ext]) cfg.shpFiles[ext] = await fileToBase64(pendingShpFiles[ext]);
+    }
+    businessType = document.getElementById('input-type-shp').value;
+  } else if(currentMode === 'draw'){
+    businessType = document.getElementById('input-type-draw').value;
+    if(drawSubmode === 'point'){
+      if(drawPoints.length < 1){ alert('지도에서 지점을 한 곳 클릭해주세요.'); return; }
+      cfg.mode = 'radius'; cfg.lat = drawPoints[0].lat; cfg.lon = drawPoints[0].lng; cfg.radiusM = drawPoints[0].radius;
+    } else if(drawSubmode === 'polygon'){
+      if(drawPoints.length < 3){ alert('구역계 외곽선은 최소 3개 지점이 필요합니다.'); return; }
+      cfg.mode = 'polygon'; cfg.points = drawPoints.map(p => [p.lng, p.lat]);
+    } else if(drawSubmode === 'line'){
+      if(drawPoints.length < 1){ alert('지도에서 지점을 최소 한 곳 클릭해주세요.'); return; }
+      return startLineBatchSearch(businessType);
+    }
+  }
+  // 이격거리 분석이 사업유형별 법정 반경(제27조의3)을 적용할 수 있도록 서버(gis_worker)에
+  // 사업유형을 함께 전달한다(요청사항) — 이전엔 businessType이 화면 표시에만 쓰이고
+  // 서버로는 전혀 전달되지 않았음.
+  cfg.businessType = businessType;
+
+  document.getElementById('btn-search').disabled = true;
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
+
+  try{
+    const res = await fetch(API_BASE + '/api/analyze', {
+      method:'POST', headers:{'Content-Type':'application/json', 'ngrok-skip-browser-warning':'1'}, body: JSON.stringify(cfg)
+    });
+    const data = await res.json();
+    if(data.error){ alert('조회 실패: ' + data.error); return; }
+    renderResults(data, businessType);
+  }catch(e){
+    alert('조회 중 오류: ' + e.message);
+  }finally{
+    document.getElementById('btn-search').disabled = false;
+    document.getElementById('loading').style.display = 'none';
+  }
+}
+
+// 선(線) 모드 — 여러 지점을 각각 독립적으로 반경 검색해서 번호별 요약표로 보여줌.
+// 특정 번호를 클릭하면 그 지점의 전체 상세결과(위치도·편입지번표 등)를 아래에 그대로 표시.
+async function startLineBatchSearch(businessType){
+  const key = localStorage.getItem('key_vworld');
+  const points = drawPoints.map((p,i) => ({n:i+1, lat:p.lat, lng:p.lng, radius:p.radius}));
+
+  document.getElementById('btn-search').disabled = true;
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('loading').innerHTML = `<span class="spinner"></span>지점 ${points.length}곳을 순서대로 조회 중입니다…`;
+  document.getElementById('results').style.display = 'none';
+
+  const batchResults = [];
+  try{
+    for(const p of points){
+      document.getElementById('loading').innerHTML = `<span class="spinner"></span>지점 #${p.n}/${points.length}(반경 ${p.radius}m) 조회 중…`;
+      const cfg = {vkey: key, mode:'radius', lat:p.lat, lon:p.lng, radiusM:p.radius, businessType};
+      const res = await fetch(API_BASE + '/api/analyze', {method:'POST', headers:{'Content-Type':'application/json', 'ngrok-skip-browser-warning':'1'}, body: JSON.stringify(cfg)});
+      const data = await res.json();
+      batchResults.push({n: p.n, lat: p.lat, lng: p.lng, radius: p.radius, data, error: data.error || null});
+    }
+    renderLineBatchResults(batchResults, businessType);
+  }catch(e){
+    alert('조회 중 오류: ' + e.message);
+  }finally{
+    document.getElementById('btn-search').disabled = false;
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('loading').innerHTML = '<span class="spinner"></span>실제 데이터 조회 및 정밀 분석 중…';
+  }
+}
+let lineBatchResults = [];
+function renderLineBatchResults(batchResults, businessType){
+  lineBatchResults = batchResults;
+  document.getElementById('results').style.display = 'block';
+  const rows = batchResults.map(r => {
+    if(r.error) return `<tr><td>#${r.n}</td><td>${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}</td><td>${r.radius}</td><td colspan="4" style="color:var(--bad);">조회 실패: ${r.error}</td></tr>`;
+    const d = r.data;
+    const zoningLbls = Object.keys(d.zoning||{}).join(', ') || '-';
+    return `<tr>
+      <td>#${r.n}</td>
+      <td>${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}</td>
+      <td>${r.radius}</td>
+      <td>${d.boundaryAreaM2.toLocaleString()}</td>
+      <td>${d.parcelCount}</td>
+      <td>${zoningLbls}</td>
+      <td><button class="small-btn" onclick="showLinePointDetail(${r.n})">상세보기</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('addr-warn-box').innerHTML = `<div class="hint">선 모드 — 지점 ${batchResults.length}곳을 각각 지점별로 지정한 반경으로 독립 검색했습니다. 번호를 눌러 상세 결과를 확인하세요.</div>`;
+  document.getElementById('location-map').innerHTML = `
+    <div class="table-scroll">
+      <table><tr><th>번호</th><th>좌표</th><th>반경(m)</th><th>면적(㎡)</th><th>편입필지수</th><th>주요 용도지역</th><th></th></tr>${rows}</table>
+    </div>`;
+  document.getElementById('stat-row').innerHTML = '';
+  // 배치 요약 화면에서는 지점별 상세 카드를 내용만 지우는 게 아니라 아예 숨긴다 — 제목만
+  // 남은 빈 박스가 나열되면 화면이 깨진 것처럼 보인다는 문제가 있었음(2026-09-14 코드리뷰).
+  ['parcel-result-card','reg-summary-card','setback-analysis-card','procedure-card'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  document.getElementById('aspect-analysis-card').style.display = 'none';
+  document.getElementById('power-grid-card').style.display = 'none';
+  // 인터랙티브 지도도 리셋한다 — 안 그러면 직전에 조회했던 지점의 지도가 그대로 남거나
+  // (처음부터 선 모드면) 빈 테두리 박스만 뜨는 문제가 있었음(2026-09-14 코드리뷰).
+  if(resultMapState){ resultMapState.map.remove(); resultMapState = null; }
+  document.getElementById('interactive-map').innerHTML = '<div class="hint" style="padding:12px;">지점별 "상세보기"를 누르면 그 지점의 인터랙티브 지도가 표시됩니다.</div>';
+}
+function showLinePointDetail(n){
+  const r = lineBatchResults.find(x => x.n === n);
+  if(!r || r.error) return;
+  renderResults(r.data, document.getElementById('input-type-draw').value);
+  const banner = `<div class="hint" style="margin-bottom:8px;">선 모드 지점 #${n} 상세 (${r.lat.toFixed(6)}, ${r.lng.toFixed(6)})</div>`;
+  document.getElementById('addr-warn-box').innerHTML = banner + document.getElementById('addr-warn-box').innerHTML;
+}
+
+// ------------------------------------------------------------------
+// 결과 렌더링
+// ------------------------------------------------------------------
+let currentResult = null;
+const today = () => new Date().toISOString().slice(0,10);
+
+function renderResults(data, businessType){
+  currentResult = data;
+  currentResult.businessType = businessType;
+  document.getElementById('results').style.display = 'block';
+  // 선(線) 배치 요약 화면에서 숨겼던 카드들을 상세보기로 돌아올 때 다시 보이게 한다.
+  ['parcel-result-card','reg-summary-card','setback-analysis-card','procedure-card'].forEach(id => {
+    document.getElementById(id).style.display = 'block';
+  });
+
+  // 부지 개요
+  const warnBox = document.getElementById('addr-warn-box');
+  if(data.matchedAddr){
+    if(data.matchCount > 1){
+      warnBox.innerHTML = `<div class="addr-warn">전국에 <b>${data.matchCount}건</b> 검색되어 첫 번째 결과 사용 — 실제 확인된 주소: <b>${data.matchedAddr}</b> (다르면 시/군/읍면/리를 더 붙여 재조회)</div>`;
+    } else {
+      warnBox.innerHTML = `<div class="hint">실제 확인된 주소: <b>${data.matchedAddr}</b></div>`;
+    }
+  } else {
+    warnBox.innerHTML = '';
+  }
+  if(data.cadastralTruncated){
+    warnBox.innerHTML += `<div class="addr-warn">후보 필지 수가 응답 상한(1,000건)에 도달 — 편입 필지 목록이 <b>일부 누락되었을 수 있습니다</b>. 구역계를 나누어 재조회 권장</div>`;
+  }
+  if(data.approxMatch){
+    warnBox.innerHTML += `<div class="addr-warn">정확한 필지 경계를 찾지 못해 <b>가장 가까운 필지로 대체</b>했습니다 — 지번 표기(산 여부, 본번-부번)를 확인해주세요</div>`;
+  }
+  renderLocationMap(data);
+  renderInteractiveMap(data);
+  const areaPyeong = (data.boundaryAreaM2 / 3.305785);
+  document.getElementById('stat-row').innerHTML = `
+    <div class="stat"><div class="n">${data.boundaryAreaM2.toLocaleString()}</div><div class="l">구역계 면적(㎡)</div></div>
+    <div class="stat"><div class="n">${Math.round(areaPyeong).toLocaleString()}</div><div class="l">평 환산</div></div>
+    <div class="stat"><div class="n">${data.parcelCount}</div><div class="l">편입 필지 수</div></div>
+    <div class="stat"><div class="n">${data.fullyIncludedCount}</div><div class="l">완전 편입</div></div>
+    <div class="stat"><div class="n">${data.partiallyIncludedCount}</div><div class="l">일부 편입(잔여지 발생)</div></div>
+  `;
+
+  renderParcelTable(data.parcels);
+  renderRegSummary(data);
+  renderSetbackAnalysis(data);
+  // 사면방향(남향비율) 분석은 태양광 배치에만 쓰이는 참고자료라, 태양광을 선택했을 때만
+  // 카드를 보여준다(요청사항) — 계산 자체는 사업유형과 무관하게 항상 수행됨.
+  const showAspect = businessType === '태양광';
+  document.getElementById('aspect-analysis-card').style.display = showAspect ? 'block' : 'none';
+  if(showAspect) renderAspectAnalysis(data);
+  renderProcedure(data, businessType);
+  renderPowerGridInfo(data);
+}
+
+// ------------------------------------------------------------------
+// 전력계통 연계정보 — 한국전력공사 전력데이터개방포털 "분산전원연계 정보" 실제 API.
+// 요청스펙은 사용자가 로그인 후 직접 확인·캡처한 것을 그대로 반영함(2026-09-11).
+// 실제 송전선로·변전소 좌표는 보안시설(국가기밀시설)이라 공개 데이터에 없음(data.go.kr의
+// "한국전력공사_지역별 공급가능 변전소 정보" 설명에도 명시된 사실) — 그래서 지도에 선·점으로
+// 표시하는 대신, 부지 중심좌표 주변을 반경(km, 사용자 지정) 내 여러 방위로 역지오코딩해서
+// 걸리는 행정구역(읍/면/동)마다 이 API를 조회하고 합쳐서 보여주는 방식으로 구현함.
+// ------------------------------------------------------------------
+let powerGridCenter = null; // {lat, lon} — 마지막 조회 결과의 중심좌표(반경 재조회용)
+function renderPowerGridInfo(data){
+  const card = document.getElementById('power-grid-card');
+  const kepcoKey = localStorage.getItem('key_kepco');
+  if(!kepcoKey){ card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  const center = data.detailCenterWgs84; // [lon, lat]
+  if(!center){
+    powerGridCenter = null;
+    document.getElementById('power-grid-body').innerHTML = '<div class="hint">중심 좌표를 구하지 못해 조회할 수 없습니다.</div>';
+    return;
+  }
+  powerGridCenter = {lat: center[1], lon: center[0]};
+  searchPowerGridRadius();
+}
+// re100market.com(신재생 계통 지도)으로 바로가기 — 요청사항. 그 사이트는 URL로 특정 주소를
+// 넘겨서 바로 그 위치를 보여주는 딥링크 기능이 없음을 실제로 확인함(검색해도 주소가
+// URL/해시에 전혀 반영 안 됨, 완전히 내부 상태로만 관리하는 SPA) — 그래서 새 창으로 열고
+// 조회한 주소를 클립보드에 복사해줘서, 그 사이트의 검색창에 바로 붙여넣기만 하면 되게 함.
+function openRe100market(){
+  const addr = (currentResult && currentResult.matchedAddr) || '';
+  window.open('https://re100market.com/', '_blank', 'noopener');
+  const hint = document.getElementById('re100market-hint');
+  hint.style.display = 'block';
+  if(addr && navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(addr)
+      .then(() => { hint.innerHTML = `주소 "<b>${escapeHtml(addr)}</b>"가 클립보드에 복사되었습니다 — re100market 검색창에 붙여넣어 확인해보세요(사이트에 좌표를 직접 넘기는 기능이 없어 수동 검색이 필요, 로그인 필요할 수 있음).`; })
+      .catch(() => { hint.innerHTML = `re100market을 새 창으로 열었습니다 — 검색창에 "<b>${escapeHtml(addr)}</b>"를 직접 입력해 확인해주세요.`; });
+  } else {
+    hint.innerHTML = addr
+      ? `re100market을 새 창으로 열었습니다 — 검색창에 "<b>${escapeHtml(addr)}</b>"를 직접 입력해 확인해주세요.`
+      : `re100market을 새 창으로 열었습니다 — 검색창에서 주소를 직접 검색해주세요.`;
+  }
+}
+// 실제 송전선로·변전소 좌표는 못 그려도, "어디까지 찾아봤는지"는 지도에 표시할 수 있다 —
+// 검색반경 원 + 실제로 데이터가 걸린 행정구역의 대표좌표(역지오코딩 샘플점)를 마커로 표시.
+function clearPowerGridMapLayers(){
+  if(!resultMapState) return;
+  (resultMapState.powerGridLayers || []).forEach(l => resultMapState.map.removeLayer(l));
+  resultMapState.powerGridLayers = [];
+  setLegendGroup(resultMapState, 'powergrid', []);
+}
+function renderPowerGridOnMap(respData, radiusKm){
+  if(!resultMapState || respData.centerLat == null || respData.centerLon == null) return;
+  resultMapState.powerGridLayers = resultMapState.powerGridLayers || [];
+  const usedRadiusKm = respData.expandedRadiusKm || radiusKm;
+  const circle = L.circle([respData.centerLat, respData.centerLon], {
+    radius: usedRadiusKm * 1000, color: '#7a4fae', weight: 2, dashArray: '5,5', fillOpacity: 0.05,
+  }).bindTooltip(
+    `전력계통 검색반경 ${usedRadiusKm}km` + (respData.expandedRadiusKm ? `(지정 ${radiusKm}km 내 없어 자동 확대)` : ''),
+    {sticky: true}
+  );
+  circle.addTo(resultMapState.map);
+  resultMapState.powerGridLayers.push(circle);
+  (respData.radiusCenterMarkers || []).forEach(m => {
+    const marker = L.circleMarker([m.lat, m.lon], {radius: 7, color: '#7a4fae', fillColor: '#7a4fae', fillOpacity: 0.9})
+      .bindTooltip(m.label, {sticky: true});
+    marker.addTo(resultMapState.map);
+    resultMapState.powerGridLayers.push(marker);
+  });
+  setLegendGroup(resultMapState, 'powergrid', [
+    {color: '#7a4fae', label: `전력계통 검색반경 ${usedRadiusKm}km / 조회된 행정구역`, shape: 'dot'},
+  ]);
+  // 검색반경(수 km)이 부지 크기보다 훨씬 커서 초기 화면(부지 경계에 맞춘 줌)에는 안 보일 수
+  // 있으므로, 처음 조회 시 한 번은 자동으로 부지+검색범위가 모두 보이게 확대한다(요청사항).
+  if(!resultMapState.powerGridAutoFitted){
+    resultMapState.powerGridAutoFitted = true;
+    fitAllResultLayers();
+  }
+}
+async function searchPowerGridRadius(){
+  const el = document.getElementById('power-grid-body');
+  const kepcoKey = localStorage.getItem('key_kepco');
+  const vkey = localStorage.getItem('key_vworld');
+  if(!powerGridCenter || !kepcoKey) return;
+  const radiusKm = parseFloat(document.getElementById('power-grid-radius').value) || 5;
+  el.innerHTML = `<div class="hint"><span class="spinner" style="width:12px;height:12px;border-width:2px;"></span>반경 ${radiusKm}km 내 조회 중(한전 데이터가 없으면 자동으로 범위를 넓혀 재검색합니다)…</div>`;
+  clearPowerGridMapLayers();
+  try{
+    const res = await fetch(API_BASE + '/api/power-grid-radius', {
+      method:'POST', headers:{'Content-Type':'application/json', 'ngrok-skip-browser-warning':'1'},
+      body: JSON.stringify({lat: powerGridCenter.lat, lon: powerGridCenter.lon, radiusKm, apiKey: kepcoKey, vkey})
+    });
+    const data = await res.json();
+    if(data.error){ el.innerHTML = `<div class="addr-warn">조회 실패: ${escapeHtml(data.error)}</div>`; return; }
+    renderPowerGridOnMap(data, radiusKm);
+    const rows = data.data || [];
+    const regions = data.regionsSearched || [];
+    const regionText = regions.join(', ') || '-';
+    const expandNote = data.expandedRadiusKm
+      ? `<div class="addr-warn" style="margin-bottom:8px;">지정 반경 ${radiusKm}km 내에 한전 데이터가 없어 <b>${data.expandedRadiusKm}km까지 자동 확대</b>해서 찾은 결과입니다.</div>`
+      : '';
+    if(!rows.length){
+      el.innerHTML = `${expandNote}<div class="hint">검색 행정구역: ${escapeHtml(regionText)} — 등록된 연계정보 없음</div>`;
+      return;
+    }
+    el.innerHTML = `${expandNote}
+      <div class="hint" style="margin-bottom:8px;">반경 ${data.expandedRadiusKm||radiusKm}km 내 행정구역: <b>${escapeHtml(regionText)}</b></div>
+      <div class="table-scroll">
+        <table>
+          <tr><th>행정구역</th><th>변전소</th><th>누적연계용량</th><th>여유용량</th><th>변압기</th><th>누적연계용량</th><th>여유용량</th><th>배전선로(DL)</th><th>누적연계용량</th><th>여유용량</th></tr>
+          ${rows.map(r => `
+            <tr>
+              <td>${escapeHtml(r._matchedRegion||'')}</td>
+              <td>${escapeHtml(r.substNm||'')}(${escapeHtml(r.substCd||'')})</td>
+              <td>${escapeHtml(r.substPwr||'')}</td>
+              <td>${escapeHtml(r.vol1||'')}</td>
+              <td>${escapeHtml(r.mtrNo||'')}</td>
+              <td>${escapeHtml(r.mtrPwr||'')}</td>
+              <td>${escapeHtml(r.vol2||'')}</td>
+              <td>${escapeHtml(r.dlNm||'')}(${escapeHtml(r.dlCd||'')})</td>
+              <td>${escapeHtml(r.dlPwr||'')}</td>
+              <td>${escapeHtml(r.vol3||'')}</td>
+            </tr>`).join('')}
+        </table>
+      </div>
+      <div class="hint" style="margin-top:8px;">한전 응답 원본 그대로(가공 없음) — 실제 접속 가능 여부는 한전 계통연계 담당부서 확인 필요</div>`;
+  }catch(e){
+    el.innerHTML = `<div class="addr-warn">조회 중 오류: ${escapeHtml(String(e.message||e))}</div>`;
+  }
+}
+
+// ------------------------------------------------------------------
+// 위치도 — 브이월드 편집지적도(WMS) 이미지 위에 실제 편입 경계선을 겹쳐 그림.
+// <img> 태그로 브이월드에 직접 요청하므로 로컬 서버를 거치지 않고 CORS 영향도 없음
+// (기존 프로토타입에서 실제 검증된 방식). 지번/반경/구역계 SHP 모두 boundary_geom을
+// 그대로 폴리곤 좌표로 반환받아 쓰므로 세 모드가 같은 코드로 처리된다.
+//
+// 실측으로 확인한 제약: lt_c_landinfobasemap(지적선) 레이어는 요청 배율이
+// 약 0.65m/px보다 성기면(=한 이미지에 담는 실제 범위가 넓으면) 완전히 백지로
+// 나온다(에러 없이 빈 이미지만 반환). 그래서 부지가 넓을 때는
+//  1) 전체 개요 이미지 — 해상도를 최대한 올려서 요청하되 너무 커지지 않게 상한을 둠
+//     (지적선이 흐리거나 안 보일 수 있음. 하지만 그 위에 겹쳐 그리는 빨간 실제
+//     경계선은 우리가 직접 계산한 정확한 벡터라서 배율과 무관하게 항상 정확함)
+//  2) 중심부 확대 이미지 — 항상 안전한 배율(약 0.5m/px)로 고정해 지적선을
+//     확실하게 볼 수 있는 근접 확대 컷을 하나 더 보여준다.
+// ------------------------------------------------------------------
+const WMS_SAFE_MPP = 0.6;      // 지적선이 안정적으로 보이는 최대 m/px
+const WMS_MAX_PX = 1400;       // 한 번에 요청할 이미지의 최대 가로/세로(용량·속도 고려)
+const WMS_DETAIL_SPAN_M = 260; // 중심부 확대 컷의 실제 범위(항상 지적선이 보이는 크기)
+
+function cadastralWmsUrl(minLon, minLat, maxLon, maxLat, w, h, key){
+  return 'https://api.vworld.kr/req/wms?service=WMS&request=GetMap&version=1.3.0'
+    + '&layers=lt_c_landinfobasemap&styles=lt_c_landinfobasemap&crs=EPSG:4326'
+    + `&bbox=${minLat},${minLon},${maxLat},${maxLon}`
+    + `&width=${w}&height=${h}&format=image/png&transparent=false&key=${encodeURIComponent(key)}`;
+}
+
+function renderLocationMap(data){
+  const el = document.getElementById('location-map');
+  const key = localStorage.getItem('key_vworld');
+  const bbox = data.mapBbox;
+  const outline = data.boundaryOutlineWgs84 || [];
+  if(!bbox){ el.innerHTML = ''; return; }
+  if(!key){
+    el.innerHTML = '<div class="hint">브이월드 API Key를 저장하면 이 자리에 실제 지적도 위치도가 표시됩니다.</div>';
+    return;
+  }
+
+  const centerLat = (bbox.minLat + bbox.maxLat) / 2;
+  const centerLon = (bbox.minLon + bbox.maxLon) / 2;
+  const mPerDegLat = 111320;
+  const mPerDegLon = 111320 * Math.cos(centerLat * Math.PI / 180);
+  const lonSpanM = (bbox.maxLon - bbox.minLon) * mPerDegLon;
+  const latSpanM = (bbox.maxLat - bbox.minLat) * mPerDegLat;
+
+  // 전체 개요 이미지 크기 — 0.6m/px를 맞추려는 크기와 상한(1400px) 중 작은 값
+  let w = Math.min(WMS_MAX_PX, Math.max(300, Math.round(lonSpanM / WMS_SAFE_MPP)));
+  let h = Math.min(WMS_MAX_PX, Math.max(300, Math.round(latSpanM / WMS_SAFE_MPP)));
+  const actualMpp = Math.max(lonSpanM / w, latSpanM / h);
+  const degraded = actualMpp > WMS_SAFE_MPP + 0.05; // 상한에 걸려 목표 배율을 못 맞춘 경우
+
+  const overviewUrl = cadastralWmsUrl(bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat, w, h, key);
+  const toPx = ([lon, lat], W, H, mnLon, mxLat, spanLon, spanLat) =>
+    `${((lon - mnLon) / spanLon * W).toFixed(1)},${((mxLat - lat) / spanLat * H).toFixed(1)}`;
+  const overviewPts = outline.map(p => toPx(p, w, h, bbox.minLon, bbox.maxLat, bbox.maxLon - bbox.minLon, bbox.maxLat - bbox.minLat)).join(' ');
+
+  // 화면에는 최대 560px로 표시(SVG viewBox로 축소 표시, 실제 요청 해상도는 그대로 유지)
+  const dispMax = 560;
+  const dispScale = Math.min(1, dispMax / Math.max(w, h));
+  const dispW = Math.round(w * dispScale), dispH = Math.round(h * dispScale);
+
+  let detailHtml = '';
+  if(degraded){
+    // 중심부 확대 컷 — 항상 지적선이 보이는 고정 실측 범위로 별도 요청.
+    // 중심점은 경계 꼭짓점의 단순 평균이 아니라, 서버가 PointOnSurface()로 계산해
+    // 반드시 폴리곤 "내부"에 있도록 보장한 좌표를 쓴다(가늘고 굽은 해안 형태 등에서
+    // 평균 좌표가 폴리곤 바깥으로 나가버리는 문제 방지).
+    const [dCenterLon, dCenterLat] = data.detailCenterWgs84 || [centerLon, centerLat];
+    const dSpan = WMS_DETAIL_SPAN_M;
+    const dPx = Math.round(dSpan / (WMS_SAFE_MPP * 0.85));
+    const dLonHalf = (dSpan / 2) / mPerDegLon;
+    const dLatHalf = (dSpan / 2) / mPerDegLat;
+    const dMinLon = dCenterLon - dLonHalf, dMaxLon = dCenterLon + dLonHalf;
+    const dMinLat = dCenterLat - dLatHalf, dMaxLat = dCenterLat + dLatHalf;
+    const detailUrl = cadastralWmsUrl(dMinLon, dMinLat, dMaxLon, dMaxLat, dPx, dPx, key);
+    const detailPts = outline.map(p => toPx(p, dPx, dPx, dMinLon, dMaxLat, dMaxLon - dMinLon, dMaxLat - dMinLat)).join(' ');
+    detailHtml = `
+      <div style="margin-top:14px;">
+        <div class="hint" style="font-weight:600;margin-bottom:4px;">중심부 확대(지적선 상세, 실제 범위 약 ${dSpan}m×${dSpan}m)</div>
+        <div class="map-frame" style="width:${Math.min(dispMax,dPx)}px;">
+          <img src="${detailUrl}" width="${Math.min(dispMax,dPx)}" height="${Math.min(dispMax,dPx)}" alt="중심부 확대 위치도">
+          <svg viewBox="0 0 ${dPx} ${dPx}" style="width:${Math.min(dispMax,dPx)}px;height:${Math.min(dispMax,dPx)}px;">
+            <polygon points="${detailPts}" fill="#ff3b30" fill-opacity="0.12" stroke="#ff3b30" stroke-width="3"/>
+          </svg>
+        </div>
+      </div>`;
+  }
+
+  el.innerHTML = `
+    <div class="map-frame" style="width:${dispW}px;">
+      <img src="${overviewUrl}" width="${dispW}" height="${dispH}" alt="위치도"
+           onerror="document.getElementById('location-map').innerHTML='<div class=&quot;hint&quot;>지도 이미지를 불러오지 못했습니다 — 브이월드 키가 올바른지 확인해주세요.</div>'">
+      <svg viewBox="0 0 ${w} ${h}" style="width:${dispW}px;height:${dispH}px;">
+        <polygon points="${overviewPts}" fill="#ff3b30" fill-opacity="0.15" stroke="#ff3b30" stroke-width="2.5"/>
+      </svg>
+    </div>
+    ${degraded ? '<div class="hint" style="margin-top:6px;">부지 범위가 넓어 배경 지적선이 흐릴 수 있습니다 — 빨간 경계선은 배율과 무관하게 정확하며, 아래 확대 컷에서 자세히 확인하세요.</div>' : ''}
+    ${detailHtml}
+    <div class="legend">
+      <span><span class="legend-dot" style="background:#ff3b30;"></span>실제 편입 경계 · 배경: 브이월드 편집지적도</span>
+      <a href="${overviewUrl}" target="_blank">원본 이미지</a>
+      <a href="#" onclick="openVWorldMapView(${centerLon},${centerLat});return false;">브이월드 지도뷰어에서 크게 보기</a>
+    </div>
+  `;
+}
+
+function openVWorldMapView(lon, lat){
+  window.open('https://map.vworld.kr/map/maps.do', '_blank', 'noopener');
+  const text = (currentResult && currentResult.matchedAddr) ? currentResult.matchedAddr : `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+  const guide = ok => alert(ok
+    ? `"${text}"가 클립보드에 복사되었습니다.\n새로 열린 브이월드 지도뷰어 검색창에 붙여넣기(Ctrl+V)하면 해당 위치로 이동해서 스크롤로 확대/축소할 수 있습니다.\n(브이월드 지도뷰어는 링크만으로 특정 위치로 자동 이동하는 기능은 지원하지 않아, 직접 검색창에 붙여넣어야 합니다.)`
+    : `브이월드 지도뷰어를 새 탭에서 열었습니다. 검색창에 "${text}"를 입력해 확인하세요.`);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(() => guide(true)).catch(() => guide(false));
+  } else guide(false);
+}
+
+// ------------------------------------------------------------------
+// 결과 위치도 — 인터랙티브 지도(배경 전환 + 규제 레이어 토글 + 실제 경계선).
+// 검색 대상 선택의 그리기 지도와 동일한 V-World 배경/오버레이 로직을 재사용.
+// ------------------------------------------------------------------
+let resultMapState = null;
+function renderInteractiveMap(data){
+  const el = document.getElementById('interactive-map');
+  const key = localStorage.getItem('key_vworld');
+  if(!key){ el.innerHTML = '<div class="hint" style="padding:12px;">브이월드 API Key를 저장하면 인터랙티브 지도가 표시됩니다.</div>'; return; }
+
+  if(resultMapState){ resultMapState.map.remove(); resultMapState = null; }
+  el.innerHTML = '';
+  const map = L.map('interactive-map', {zoomControl: true});
+  // 기본 배경은 위성(요청사항: 처음 연결되는 인터랙티브 지도는 위성으로).
+  resultMapState = {map, baseLayer: null, overlays: {}, currentBase: 'Satellite', extraLayers: [], boundaryLayer: null, legendGroups: {}, legendBodyEl: null};
+  switchBasemap(map, resultMapState, 'Satellite');
+  buildLayerControlPanel(map, resultMapState);
+  document.querySelectorAll('#interactive-map .map-layer-panel input[type=checkbox]').forEach(cb => cb.dataset.mapKey = 'result');
+  buildMapAuxPanel(map, resultMapState);
+
+  const outline = data.boundaryOutlineWgs84 || [];
+  if(outline.length){
+    const latlngs = outline.map(([lon,lat]) => [lat,lon]);
+    const boundaryLayer = L.polygon(latlngs, {color:'#ff3b30', weight:3, fillOpacity:0.1});
+    boundaryLayer.addTo(map);
+    resultMapState.boundaryLayer = boundaryLayer;
+    map.fitBounds(boundaryLayer.getBounds(), {padding:[24,24]});
+  } else if(data.mapBbox){
+    map.fitBounds([[data.mapBbox.minLat, data.mapBbox.minLon],[data.mapBbox.maxLat, data.mapBbox.maxLon]]);
+  } else {
+    map.setView([36.5, 127.8], 7);
+  }
+  // 기본으로 켜는 레이어는 "① 연속지적도(필지 참고용)" + "② 이 부지에 실제로 해당되는
+  // 규제만"으로 한정한다(요청사항) — 이전엔 15개 레이어를 해당 여부와 무관하게 전부 켜서
+  // 지도가 복잡해지고 이격거리/전력계통 표시가 묻혀 보이던 문제가 있었음.
+  const applicable = new Set(data.applicableRegulationTypenames || []);
+  el.querySelectorAll('.map-layer-panel input[type=checkbox]').forEach(cb => {
+    const tn = cb.dataset.typename;
+    cb.checked = (tn === 'lp_pa_cbnd_bubun') || applicable.has(tn);
+    toggleOverlayLayer(cb);
+  });
+  renderSetbackOnMap(data, resultMapState);
+  setTimeout(() => {
+    map.invalidateSize();
+    // 이격거리 매칭 시설(최대 600m 밖)이 부지 경계에만 맞춘 초기 화면 밖에 있을 수 있어,
+    // 있으면 그것까지 포함해 한 번 더 맞춰준다(요청사항 — 표시는 됐는데 화면 밖이라 안
+    // 보이던 문제). 전력계통(수 km 반경)은 8번 카드에서 조회될 때 별도로 자동 확대함.
+    if(resultMapState && resultMapState.extraLayers.length) fitAllResultLayers();
+  }, 80);
+}
+
+// ------------------------------------------------------------------
+// 지도 좌하단 보조 패널: "전체 범위 보기" 버튼 + 동적 범례(요청사항 — 이격거리/전력계통
+// 표시가 화면 밖에 있거나 다른 레이어에 묻혀 안 보인다는 피드백에 대응).
+// ------------------------------------------------------------------
+function buildMapAuxPanel(map, state){
+  const div = L.DomUtil.create('div', 'map-aux-panel');
+  div.innerHTML = '<button onclick="fitAllResultLayers()">전체 범위 보기</button><div class="map-legend-body"></div>';
+  L.DomEvent.disableClickPropagation(div);
+  L.DomEvent.disableScrollPropagation(div);
+  const ctl = L.control({position: 'bottomleft'});
+  ctl.onAdd = () => div;
+  ctl.addTo(map);
+  state.legendBodyEl = div.querySelector('.map-legend-body');
+}
+function setLegendGroup(state, key, items){
+  if(!state || !state.legendBodyEl) return;
+  state.legendGroups[key] = items;
+  const all = Object.values(state.legendGroups).flat();
+  state.legendBodyEl.innerHTML = all.map(it => `
+    <div class="row"><span class="${it.shape==='dot'?'dot':'swatch'}" style="background:${it.color};"></span><span>${escapeHtml(it.label)}</span></div>
+  `).join('');
+}
+function extendBoundsFromLayer(bounds, layer){
+  if(!layer) return;
+  try{
+    if(typeof layer.getBounds === 'function') bounds.extend(layer.getBounds());
+    else if(typeof layer.getLatLng === 'function') bounds.extend(layer.getLatLng());
+  }catch(e){ /* 좌표 없는 레이어는 무시 */ }
+}
+function fitAllResultLayers(){
+  const state = resultMapState;
+  if(!state) return;
+  const bounds = L.latLngBounds([]);
+  extendBoundsFromLayer(bounds, state.boundaryLayer);
+  (state.extraLayers||[]).forEach(l => extendBoundsFromLayer(bounds, l));
+  (state.powerGridLayers||[]).forEach(l => extendBoundsFromLayer(bounds, l));
+  if(bounds.isValid()) state.map.fitBounds(bounds, {padding:[30,30]});
+}
+
+// ------------------------------------------------------------------
+// 이격거리 최근접 시설을 인터랙티브 지도 위에 색깔별 외곽선으로 표시(요청사항).
+// ------------------------------------------------------------------
+// 사업유형별로 카테고리 라벨이 달라지므로(제27조의3 적용 시 "주택(대지 지목 기준 추정)"/
+// "도로", 기타 사업유형은 기존 3종) 고정 목록 대신 서버가 돌려준 키를 그대로 순회한다.
+const SETBACK_COLORS = {
+  '주택(대지 지목 기준 추정)': '#c0392b',
+  '도로': '#e08a00',
+  '하천·구거': '#0f7fd6',
+  '대지(건축물부지)': '#6b6f76',
+};
+const SETBACK_FALLBACK_COLOR = '#8e44ad';
+function renderSetbackOnMap(data, state){
+  const s = data.setbackAnalysis;
+  if(!s || s.error){ setLegendGroup(state, 'setback', []); return; }
+  const legendItems = [];
+  for(const label of Object.keys(s)){
+    if(label === 'legalBasis' || label === 'businessType') continue;
+    const v = s[label];
+    if(!v || !v.found || !v.outlineWgs84 || !v.outlineWgs84.length) continue;
+    const color = SETBACK_COLORS[label] || SETBACK_FALLBACK_COLOR;
+    const latlngs = v.outlineWgs84.map(([lon,lat]) => [lat,lon]);
+    // 흰색 테두리(halo)를 먼저 깔아 위성사진 등 어떤 배경 위에서도 도드라지게 표시(요청사항 —
+    // "지도에서 눈에 띄지 않는다"는 피드백에 대응, 배경색과 상관없는 대비 확보).
+    const halo = L.polygon(latlngs, {color:'#ffffff', weight:7, opacity:0.9, fill:false});
+    halo.addTo(state.map);
+    state.extraLayers.push(halo);
+    const layer = L.polygon(latlngs, {color, weight: 4, dashArray: '8,5', fillOpacity: 0.3})
+      .bindTooltip(`${label} · 최단거리 ${v.nearestDistanceM}m`, {sticky: true, permanent: true, direction: 'center', className: 'setback-tooltip'});
+    layer.addTo(state.map);
+    state.extraLayers.push(layer);
+    legendItems.push({color, label: `${label} 최근접(${v.nearestDistanceM}m)`, shape: 'swatch'});
+  }
+  setLegendGroup(state, 'setback', legendItems);
+}
+
+function renderParcelTable(parcels){
+  const cols = ['지번','지목','공부상면적(㎡)','편입면적(㎡)','편입비율','소유구분명','공유자수','개별공시지가(원/㎡)','도로명주소','산지정보(산림청)'];
+  let html = '<table><tr>' + cols.map(c=>`<th>${c}</th>`).join('') + '</tr>';
+  parcels.forEach((p,i) => {
+    const pctClass = p.included_pct >= 99.5 ? 'pct-full' : 'pct-partial';
+    const jiga = p.jiga ? `${Number(p.jiga).toLocaleString()}원` : '-';
+    const sanjiClass = p.sanji_gubun && p.sanji_gubun.startsWith('보전산지') ? 'pct-partial' : '';
+    html += `<tr>
+      <td>${p.jibun||'-'}</td>
+      <td>${p.jimok||'-'}</td>
+      <td>${p.gongbu_area_m2.toLocaleString()}</td>
+      <td>${p.included_area_m2.toLocaleString()}</td>
+      <td class="${pctClass}">${p.included_pct}%</td>
+      <td>${p.posesn_se_name ?? '-'}</td>
+      <td>${p.cnrs_psn_co ?? '-'}</td>
+      <td>${jiga}</td>
+      <td>${p.addr||'-'}</td>
+      <td class="${sanjiClass}">${sanjiLabel(p)}</td>
+    </tr>`;
+  });
+  html += '</table>';
+  document.getElementById('parcel-table').innerHTML = html;
+}
+
+function sanjiLabel(p){
+  if(!p.sanji_gubun) return '해당없음/조회안됨';
+  if(p.sanji_gubun === '준보전산지') return '준보전산지';
+  return `${p.sanji_gubun} (공익 ${p.sanji_gong_area_m2}㎡/임업 ${p.sanji_yim_area_m2}㎡)`;
+}
+
+function renderRegSummary(data){
+  // 이전엔 카테고리마다 자기 소제목 + 자기만의 그리드 한 줄을 따로 차지해서, 대부분
+  // 카테고리에 항목이 1개뿐이라 세로로 계속 쌓이고 오른쪽 공간이 비어 보였음(요청사항).
+  // ②번 카드의 stat-row처럼 전부 한 그리드에 타일로 흘려보내 가로 공간을 채우도록 변경 —
+  // 카테고리명은 각 타일 제목에 "카테고리 · 항목명" 형태로 넣어 정보 손실 없이 유지.
+  function categoryTiles(category, obj, emptyMsg){
+    const keys = Object.keys(obj||{});
+    if(!keys.length){
+      return [`<div class="reg-card"><div class="t">${escapeHtml(category)}</div><div class="p zero">해당 없음</div><div class="lbl">${escapeHtml(emptyMsg)}</div></div>`];
+    }
+    return keys.map(k => {
+      const v = obj[k];
+      if(v.error) return `<div class="reg-card"><div class="t">${escapeHtml(category)} · ${escapeHtml(k)}</div><div class="hint">조회 실패: ${escapeHtml(v.error)}</div></div>`;
+      return `<div class="reg-card hit"><div class="t">${escapeHtml(category)} · ${escapeHtml(k)}</div><div class="p">${v.pct}%</div>
+        <div class="lbl">${v.area_m2.toLocaleString()}㎡${v.labels&&v.labels.length? ' · '+v.labels.join(', ') : ''}</div></div>`;
+    });
+  }
+  const tiles = [];
+  tiles.push(...categoryTiles('용도지역', data.zoning, '공유수면 등 미분류 가능'));
+  tiles.push(...categoryTiles('용도지구', data.districts, '해당 없음'));
+  tiles.push(...categoryTiles('산림특별구역', data.forestSpecial, '산림보호구역·백두대간보호구역 등'));
+  tiles.push(...categoryTiles('산지구분', data.sanjiClassification, '전체 준보전산지이거나 산지 아님'));
+  tiles.push(...categoryTiles('농지구분', data.farmland, '농업진흥지역 기준'));
+  tiles.push(...categoryTiles('기타규제', data.otherRegulation, '습지·공유수면·가축사육제한 등'));
+  document.getElementById('reg-summary-body').innerHTML = `<div class="reg-summary">${tiles.join('')}</div>`;
+}
+
+// ------------------------------------------------------------------
+// 이격거리 분석 — 사업유형이 태양광/풍력이면 제27조의3 법정 상한 반경(주택/도로), 그 외는
+// 부지 경계에서 도로/하천·구거/대지(건축물부지)까지 최단거리(참고용 600m 고정).
+// ------------------------------------------------------------------
+function renderSetbackAnalysis(data){
+  const el = document.getElementById('setback-analysis-body');
+  const s = data.setbackAnalysis;
+  if(!s || s.error){ el.innerHTML = `<div class="hint">${s&&s.error ? escapeHtml(s.error) : '분석 결과 없음'}</div>`; return; }
+  const labels = Object.keys(s).filter(k => k !== 'legalBasis' && k !== 'businessType');
+  const cards = labels.map(label => {
+    const v = s[label];
+    const radiusTxt = `반경 ${v.legalRadiusM}m`;
+    if(!v.found){
+      return `<div class="reg-card"><div class="t">${escapeHtml(label)}</div><div class="p zero">범위 밖</div><div class="lbl">${radiusTxt} 내 미발견</div></div>`;
+    }
+    const within = v.withinLegalRadius;
+    return `<div class="reg-card ${within?'hit':''}"><div class="t">${escapeHtml(label)}</div><div class="p${within?'':' zero'}">${v.nearestDistanceM}m</div><div class="lbl">최단거리 · 검토범위 ${radiusTxt}${within?'':' (범위 밖)'}</div></div>`;
+  }).join('');
+  // 사업유형이 태양광/육상풍력/해상풍력이면 제27조의3 법정 상한 반경, 그 외("기타" 등)는
+  // 법적 근거 없는 일반 참고값(600m)을 쓴다 — gis_worker가 legalBasis 유무로 구분해서 돌려줌.
+  const basisHtml = s.legalBasis
+    ? `<div class="hint" style="margin-top:8px;"><b>근거:</b> ${escapeHtml(s.legalBasis)} — 지자체가 조례로 이격거리를 정할 수 있는 <b>상한 반경</b>이며, 실제 적용거리는 관할 조례 확인이 필요합니다. "주택"은 지목 "대"(건축물부지) 기준 추정값(상가·창고 등도 포함될 수 있음).</div>`
+    : `<div class="hint" style="margin-top:8px;">사업유형이 태양광·풍력이 아니어서 제27조의3 법정 반경 대신 일반 참고값(600m)을 표시합니다. "대지(건축물부지)"는 용도 구분 없는 지목 기준이라 주거시설 자체를 특정하지는 않습니다.</div>`;
+  el.innerHTML = `<div class="reg-summary">${cards}</div>${basisHtml}`;
+}
+
+// ------------------------------------------------------------------
+// 사면방향(Aspect) 분석 — 태양광 배치 참고(남향 비율).
+// ------------------------------------------------------------------
+function renderAspectAnalysis(data){
+  const el = document.getElementById('aspect-analysis-body');
+  const a = data.aspectAnalysis;
+  if(!a){ el.innerHTML = '<div class="hint">분석 결과 없음</div>'; return; }
+  if(!a.available){
+    el.innerHTML = `<div class="reg-card"><div class="t">분석 불가</div><div class="hint" style="margin-top:4px;">${escapeHtml(a.reason||'')}</div></div>`;
+    return;
+  }
+  const bandCards = Object.entries(a.bands).map(([label, v]) => `
+    <div class="reg-card ${v.pct>0?'hit':''}"><div class="t">${label}</div><div class="p ${v.pct===0?'zero':''}">${v.pct}%</div>
+      <div class="lbl">${v.area_m2.toLocaleString()}㎡</div></div>`).join('');
+  el.innerHTML = `
+    <div class="stat-row">
+      <div class="stat"><div class="n">${a.southFacingPct}%</div><div class="l">남향(S/SE/SW) 비율</div></div>
+      <div class="stat"><div class="n">${a.analyzedAreaM2.toLocaleString()}</div><div class="l">분석 면적(㎡)</div></div>
+    </div>
+    <div class="hint" style="margin:10px 0 6px;font-weight:700;color:var(--text);">8방위 분포</div>
+    <div class="reg-summary">${bandCards}</div>
+    <div class="hint" style="margin-top:10px;">${escapeHtml(a.demSource)}</div>`;
+}
+
+// ------------------------------------------------------------------
+// 절차도 (SVG 도식화) + 전문용어 특이사항
+// ------------------------------------------------------------------
+function buildSpecialNotes(data){
+  const notes = [];
+  const has = (obj) => obj && Object.keys(obj).length > 0;
+  if(has(data.farmland)) notes.push('농업진흥구역 편입 확인 — 「농지법」 제34조에 따른 농지전용허가(협의) 대상 여부 확인 필요');
+  if(has(data.forestSpecial)) notes.push('산림 특별구역(산림보호구역 등) 편입 확인 — 「산림보호법」 등 개별 법령상 행위제한 확인 필요');
+  const sanjiHits = Object.keys(data.sanjiClassification || {}).filter(k => k.startsWith('보전산지'));
+  if(sanjiHits.length) notes.push(`보전산지(${sanjiHits.join(', ')}) 편입 확인(산림청 산지정보조회 기준) — 「산지관리법」상 산지전용허가·신고 대상 여부 확인 필요`);
+  const other = data.otherRegulation || {};
+  if(other['습지보호구역'] || other['습지보호지역']) notes.push('습지보호(지)구역 편입 — 「습지보전법」 제8조 행위제한 검토 필요');
+  if(other['공유수면매립기본계획'] || other['공유수면매립준공']) notes.push('공유수면 관련 구간 포함 — 「공유수면 관리 및 매립에 관한 법률」상 매립 기본계획 반영 여부 확인 필요');
+  if(other['가축사육제한구역']) notes.push('가축사육제한구역 포함 — 「가축분뇨의 관리 및 이용에 관한 법률」 및 관할 지자체 조례상 이격거리 기준 확인 필요');
+  if(other['개발제한구역']) notes.push('개발제한구역(그린벨트) 편입 — 「개발제한구역의 지정 및 관리에 관한 특별조치법」상 개발행위 원칙적 제한');
+  if(other['상수원보호구역']) notes.push('상수원보호구역 편입 — 「수도법」상 행위제한 확인 필요');
+  if(other['사업지구(택지개발등)']) notes.push(`사업지구 편입 확인(${other['사업지구(택지개발등)'].labels.join(', ')}) — 택지개발촉진법·공공주택특별법 등 해당 사업 근거법령상 처분제한·환매 조건 등 확인 필요`);
+  const districts = data.districts || {};
+  if(districts['지구단위계획구역']) notes.push('지구단위계획구역 편입 확인 — 「국토의 계획 및 이용에 관한 법률」상 지구단위계획 지침(건축한계선·용도제한 등) 별도 확인 필요');
+  if(districts['도시계획도로']) notes.push(`도시·군계획시설(도로) 저촉 확인(${districts['도시계획도로'].labels.join(', ')}) — 저촉 부분은 원칙적으로 건축 제한, 도로 집행 여부(미집행/집행) 확인 필요`);
+  const zoning = data.zoning || {};
+  if(zoning['자연환경보전지역']) notes.push('자연환경보전지역 포함 — 「국토의 계획 및 이용에 관한 법률」상 개발행위 극히 제한적');
+  notes.push('관할 지방자치단체 자치법규(조례)상 사업유형별 이격거리·경사도 등 별도 기준 확인 필요 (본 시스템 자동조회 대상 아님)');
+  notes.push('생태경관보전지역·산지전용제한구역·상수원보호구역 내 환경정비구역·군사시설보호구역은 자동조회 불가 — 수동 확인 필요');
+  return notes;
+}
+
+function renderProcedure(data, businessType){
+  const steps = ['부지·편입조서 확정', '관련 법령·조례 확인', '관계기관 사전협의', '개발행위허가 신청',
+    businessType.includes('풍력') ? '발전사업허가(전기사업법)' : '발전사업허가·개발행위허가', '인허가 완료'];
+  const w = 170, gap = 14, h = 64, totalW = steps.length*w + (steps.length-1)*gap + 20;
+  let svg = `<svg viewBox="0 0 ${totalW} 110" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:${totalW}px;">`;
+  steps.forEach((s,i) => {
+    const x = 10 + i*(w+gap);
+    svg += `<rect x="${x}" y="20" width="${w}" height="${h}" rx="6" fill="#eaf1fd" stroke="#0f5fd6" stroke-width="1.3"/>
+      <text x="${x+w/2}" y="14" text-anchor="middle" font-size="10.5" fill="#0f5fd6" font-weight="700">STEP ${i+1}</text>
+      <text x="${x+w/2}" y="${20+h/2+5}" text-anchor="middle" font-size="12" fill="#12315c" font-weight="600">${s}</text>`;
+    if(i < steps.length-1){
+      const ax = x+w;
+      svg += `<line x1="${ax}" y1="${20+h/2}" x2="${ax+gap}" y2="${20+h/2}" stroke="#0f5fd6" stroke-width="1.8"/>
+        <polygon points="${ax+gap},${20+h/2-5} ${ax+gap+7},${20+h/2} ${ax+gap},${20+h/2+5}" fill="#0f5fd6"/>`;
+    }
+  });
+  svg += '</svg>';
+
+  const notes = buildSpecialNotes(data);
+  const notesHtml = `<div class="proc-note"><b>확인된 특이사항 (사업유형: ${businessType})</b><ul>${notes.map(n=>`<li>${n}</li>`).join('')}</ul></div>`;
+
+  document.getElementById('procedure-diagram').innerHTML = `<div class="procflow" style="overflow-x:auto;">${svg}</div>${notesHtml}`;
+}
+
+// ------------------------------------------------------------------
+// CSV 다운로드 — 공부상면적/편입면적 분리 반영
+// ------------------------------------------------------------------
+function csvEscape(v){ const s = String(v ?? ''); return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
+function downloadCsv(){
+  if(!currentResult){ alert('먼저 조회를 실행해주세요.'); return; }
+  const header = ['지번','PNU','지목','공부상면적(㎡)','편입면적(㎡)','편입비율(%)','소유구분명','공유자수','개별공시지가(원/㎡)','도로명주소',
+    '「국토계획법」에 따른 지역·지구등','다른 법령에 따른 지역·지구등','산림 특별구역','농업진흥지역','산지구분(산림청)','출처','조회일자'];
+  const rows = currentResult.parcels.map(p => [
+    p.jibun, p.pnu, p.jimok||'', p.gongbu_area_m2, p.included_area_m2, p.included_pct,
+    p.posesn_se_name ?? '', p.cnrs_psn_co ?? '', p.jiga ?? '', p.addr||'',
+    p['국토계획법_지역지구']||'', p['다른법령_지역지구']||'', p['산림특별구역']||'', p['농업진흥지역']||'', sanjiLabel(p),
+    '브이월드 연속지적도+토지소유정보(실제)', today()
+  ]);
+  const lines = [header, ...rows].map(line => line.map(csvEscape).join(',')).join('\r\n');
+  const blob = new Blob(['﻿'+lines], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `편입지번_발취결과_${today()}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+
+</body>
+</html>
