@@ -158,94 +158,15 @@
 <a href="#main-content" class="skip-nav">본문 바로가기</a>
 
 <header>
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
-    <div>
-      <h1>부지 규제사항 검토 시스템</h1>
-      <p>지번 · 반경 · 구역계 · 지도입력 — 규제사항 · 전력계통 자동 조회</p>
-    </div>
-    <button id="btn-settings" onclick="openSettingsModal()" title="API Key 설정" style="flex:none;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.25);color:#fff;width:38px;height:38px;border-radius:var(--radius-sm);font-size:16px;cursor:pointer;">⚙</button>
+  <div>
+    <h1>부지 규제사항 검토 시스템</h1>
+    <p>지번 · 반경 · 구역계 · 지도입력 — 규제사항 · 전력계통 자동 조회</p>
   </div>
 </header>
-
-<!-- ============ API Key 설정 모달 (기초자료 — 평소엔 숨김, 톱니바퀴 아이콘으로만 접근) ============ -->
-<div id="settings-modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(15,25,40,0.5);z-index:1000;" onclick="if(event.target===this) closeSettingsModal()">
-  <div style="background:#fff;max-width:620px;margin:5vh auto;border-radius:10px;padding:24px 26px;max-height:88vh;overflow-y:auto;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-      <h2 style="margin:0;font-size:15.5px;font-weight:700;">API Key 관리</h2>
-      <button onclick="closeSettingsModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">×</button>
-    </div>
-    <p class="hint" style="margin:0 0 14px;">이 브라우저에만 저장됩니다. 한 번 저장하면 다시 열 필요 없음.</p>
-
-    <div class="keybox">
-      <label>브이월드(V-World) <span id="vkey-status" class="key-status unset">미설정</span></label>
-      <input id="key-vworld" type="text" placeholder="예: 1234ABCD-1234-1234-1234-1234ABCD5678" oninput="onKeyInput()">
-      <small><a href="https://www.vworld.kr/dev/v4dv_2ddataguide2_s001.do" target="_blank">키 발급</a> — 지번·용도지역·소유정보·공시지가 조회에 필수</small>
-      <div class="actions">
-        <button class="ghost" onclick="saveKeys()">저장</button>
-        <span class="hint" id="key-save-msg"></span>
-      </div>
-    </div>
-
-    <div class="keybox opt-a">
-      <label>에코뱅크(국립생태원) <span id="ekey-status" class="key-status unset">미설정</span></label>
-      <input id="key-ecobank" type="text" placeholder="EcoBank 발급 인증키(serviceKey)" oninput="onKeyInput()">
-      <small><a href="https://www.nie-ecobank.kr/data/api/writeForm.do" target="_blank">키 발급</a> · <a href="https://www.nie-ecobank.kr/data/api/intrcn.do" target="_blank">사용법</a> — 백두대간·생태계정밀조사 등 그 외 에코뱅크 API용(현재 화면에서는 미사용, 향후 확장용 보관) (선택)</small>
-      <div class="actions">
-        <button class="ghost" onclick="saveKeys()">저장</button>
-      </div>
-    </div>
-
-    <div class="keybox opt-b">
-      <label>한국전력공사 분산전원연계정보 <span id="kkey-status" class="key-status unset">미설정</span></label>
-      <input id="key-kepco" type="text" placeholder="발급받은 API 인증키(40자리)" oninput="onKeyInput()">
-      <small><a href="https://bigdata.kepco.co.kr" target="_blank">키 발급</a> — 변전소·배전선로 여유용량 참고자료 표시 (선택)</small>
-      <div class="actions">
-        <button class="ghost" onclick="saveKeys()">저장</button>
-      </div>
-    </div>
-
-    <details class="other-keys">
-      <summary>국가법령정보센터 (선택)</summary>
-      <div class="field-row">
-        <div class="field">
-          <label>인증키(OC)</label>
-          <input id="key-law" type="text" placeholder="open.law.go.kr 이메일 ID">
-          <small>법령 조문 자동 인용용 — 없어도 수동 확인 가능. <a href="https://open.law.go.kr/LSO/openApi/guideList.do" target="_blank">키 발급</a></small>
-        </div>
-      </div>
-      <div class="actions"><button class="ghost" onclick="saveKeys()">저장</button></div>
-    </details>
-
-    <details class="other-keys" open>
-      <summary>그 외 사이트 API 키 추가</summary>
-      <div class="hint" style="margin-top:8px;">필요한 사이트의 이름·링크·키를 직접 추가해 보관할 수 있습니다.</div>
-      <div class="field-row" style="margin-top:10px;">
-        <div class="field" style="flex:1.2;">
-          <label>사이트 이름</label>
-          <input id="ck-name" type="text" placeholder="예: 국가공간정보포털">
-        </div>
-        <div class="field" style="flex:1.5;">
-          <label>신청 링크(선택)</label>
-          <input id="ck-url" type="text" placeholder="https://...">
-        </div>
-        <div class="field" style="flex:1.5;">
-          <label>API 키 값</label>
-          <input id="ck-value" type="text" placeholder="발급받은 키 값">
-        </div>
-        <div class="field" style="flex:none;align-self:flex-end;">
-          <button class="ghost" onclick="addCustomKey()">추가</button>
-        </div>
-      </div>
-      <div id="custom-keys-list" style="margin-top:12px;"></div>
-    </details>
-  </div>
-</div>
 
 <div class="wrap" id="main-content">
 
   <div id="server-banner"></div>
-
-  <div id="key-missing-notice" style="display:none;" class="addr-warn">브이월드 API Key가 필요합니다 — 오른쪽 위 <b>⚙</b>을 눌러 입력해주세요.</div>
 
   <div class="card">
     <h2><span class="num">1</span> 검색 대상 선택</h2>
@@ -435,9 +356,8 @@
 </div>
 
 <footer>
-  260910.부지규제검토시스템.V17.html · <a href="260910.과제정의서.V4.md" target="_blank">과제정의서</a> ·
-  <a href="260907.요구사항정의서(PRD).V1.md" target="_blank">PRD V1</a><br>
-  입력한 API 키와 업로드 파일은 이 컴퓨터의 로컬 서버 안에서만 처리되며 외부로 전송되지 않습니다.
+  부지 규제사항 검토 시스템<br>
+  업로드한 파일은 분석 서버에서만 처리되며 외부로 전송되지 않습니다.
 </footer>
 
 <script>
@@ -448,114 +368,32 @@
 // 지금 페이지와 같은 주소로 요청이 감(기존 동작과 동일).
 // ------------------------------------------------------------------
 const API_BASE = 'https://confident-briskness-estrogen.ngrok-free.dev';
-// ------------------------------------------------------------------
-// 키 저장/불러오기
-// ------------------------------------------------------------------
-function refreshStatusBadge(inputId, statusId){
-  const has = !!document.getElementById(inputId).value.trim();
-  const el = document.getElementById(statusId);
-  el.textContent = has ? '저장됨' : '미설정';
-  el.className = 'key-status ' + (has ? 'set' : 'unset');
-}
-function onKeyInput(){
-  const v = document.getElementById('key-vworld').value.trim();
-  document.getElementById('vkey-status').textContent = v ? '입력됨 (저장 버튼을 눌러주세요)' : '미설정';
-  document.getElementById('vkey-status').className = 'key-status ' + (v ? 'set' : 'unset');
-  const e = document.getElementById('key-ecobank').value.trim();
-  document.getElementById('ekey-status').textContent = e ? '입력됨 (저장 버튼을 눌러주세요)' : '미설정';
-  document.getElementById('ekey-status').className = 'key-status ' + (e ? 'set' : 'unset');
-  const p = document.getElementById('key-kepco').value.trim();
-  document.getElementById('kkey-status').textContent = p ? '입력됨 (저장 버튼을 눌러주세요)' : '미설정';
-  document.getElementById('kkey-status').className = 'key-status ' + (p ? 'set' : 'unset');
-}
-function loadKeys(){
-  document.getElementById('key-vworld').value = localStorage.getItem('key_vworld') || '';
-  document.getElementById('key-law').value = localStorage.getItem('key_law') || '';
-  document.getElementById('key-ecobank').value = localStorage.getItem('key_ecobank') || '';
-  document.getElementById('key-kepco').value = localStorage.getItem('key_kepco') || '';
-  refreshStatusBadge('key-vworld', 'vkey-status');
-  refreshStatusBadge('key-ecobank', 'ekey-status');
-  refreshStatusBadge('key-kepco', 'kkey-status');
-  renderCustomKeys();
-  updateKeyMissingNotice();
-}
-function saveKeys(){
-  localStorage.setItem('key_vworld', document.getElementById('key-vworld').value.trim());
-  localStorage.setItem('key_law', document.getElementById('key-law').value.trim());
-  localStorage.setItem('key_ecobank', document.getElementById('key-ecobank').value.trim());
-  localStorage.setItem('key_kepco', document.getElementById('key-kepco').value.trim());
-  document.getElementById('key-save-msg').textContent = '저장됨 (이 브라우저에만 보관)';
-  refreshStatusBadge('key-vworld', 'vkey-status');
-  refreshStatusBadge('key-ecobank', 'ekey-status');
-  refreshStatusBadge('key-kepco', 'kkey-status');
-  updateKeyMissingNotice();
-  checkServerHealth();
-}
-function updateKeyMissingNotice(){
-  document.getElementById('key-missing-notice').style.display = localStorage.getItem('key_vworld') ? 'none' : 'block';
-}
-function openSettingsModal(){
-  document.getElementById('settings-modal-backdrop').style.display = 'block';
-}
-function closeSettingsModal(){
-  document.getElementById('settings-modal-backdrop').style.display = 'none';
-}
-loadKeys();
-// 키가 아예 없으면(첫 방문) 바로 설정창을 열어준다
-if(!localStorage.getItem('key_vworld')) openSettingsModal();
 
 // ------------------------------------------------------------------
-// 그 외 사이트 API 키 — 이름/신청링크/키값을 자유롭게 추가·삭제
+// 지도(배경 타일·규제 레이어 오버레이) 전용 브이월드 키 — 2026-09-17: 실제 분석에 쓰는
+// 키는 서버가 전부 관리하지만(방문자에게 절대 노출 안 됨), 인터랙티브 지도의 배경·오버레이
+// 타일은 Leaflet이 브라우저에서 직접 api.vworld.kr을 호출하는 구조라 이 키만큼은 타일
+// 요청 URL에 실릴 수밖에 없다(개발자도구 네트워크 탭으로 열어보면 보일 수 있음 — 실제
+// 분석 키와 노출 수준이 다르다는 점에 유의). 방문자가 직접 입력할 필요는 없도록, 페이지
+// 로드 시 서버에서 한 번 받아온다.
+let mapVworldKey = '';
+async function loadMapVworldKey(){
+  try{
+    const res = await fetch(API_BASE + '/api/map-key', {headers:{'ngrok-skip-browser-warning':'1'}});
+    const data = await res.json();
+    mapVworldKey = data.vworldKey || '';
+  }catch(e){ mapVworldKey = ''; }
+}
+loadMapVworldKey();
+
 // ------------------------------------------------------------------
-function loadCustomKeys(){
-  try{ return JSON.parse(localStorage.getItem('custom_api_keys') || '[]'); }catch(e){ return []; }
-}
-function saveCustomKeys(list){
-  localStorage.setItem('custom_api_keys', JSON.stringify(list));
-}
-function renderCustomKeys(){
-  const list = loadCustomKeys();
-  const el = document.getElementById('custom-keys-list');
-  if(!list.length){ el.innerHTML = '<div class="hint">아직 추가된 항목이 없습니다.</div>'; return; }
-  el.innerHTML = list.map((k, i) => `
-    <div class="keybox" style="padding:12px 14px;margin-bottom:8px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-        <div>
-          <b>${escapeHtml(k.name)}</b>
-          ${k.url ? ` · <a href="${escapeHtml(k.url)}" target="_blank">신청/안내 페이지 열기</a>` : ''}
-        </div>
-        <button class="ghost" onclick="deleteCustomKey(${i})">삭제</button>
-      </div>
-      <input type="text" value="${escapeHtml(k.value)}" style="margin-top:8px;font-family:monospace;"
-             oninput="updateCustomKeyValue(${i}, this.value)">
-    </div>
-  `).join('');
-}
+// 2026-09-17(배포용): API 키 관리 UI 자체를 제거함(요청사항 — 성과품으로 제출하는 배포
+// 화면에는 API 키 관련 내용이 전혀 없어야 함). 조회에 쓰는 키는 전부 서버(관리자 PC)가
+// 관리하며 이 화면은 키의 존재 자체를 몰라도 되게 만들었다 — 로컬 개발용 원본
+// (260910.부지규제검토시스템.V19.html)에는 관리자용 설정 화면이 남아있음.
+// ------------------------------------------------------------------
 function escapeHtml(s){
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-function addCustomKey(){
-  const name = document.getElementById('ck-name').value.trim();
-  const url = document.getElementById('ck-url').value.trim();
-  const value = document.getElementById('ck-value').value.trim();
-  if(!name){ alert('사이트 이름을 입력해주세요.'); return; }
-  const list = loadCustomKeys();
-  list.push({name, url, value});
-  saveCustomKeys(list);
-  document.getElementById('ck-name').value = '';
-  document.getElementById('ck-url').value = '';
-  document.getElementById('ck-value').value = '';
-  renderCustomKeys();
-}
-function updateCustomKeyValue(idx, value){
-  const list = loadCustomKeys();
-  if(list[idx]){ list[idx].value = value; saveCustomKeys(list); }
-}
-function deleteCustomKey(idx){
-  const list = loadCustomKeys();
-  list.splice(idx, 1);
-  saveCustomKeys(list);
-  renderCustomKeys();
 }
 
 // ------------------------------------------------------------------
@@ -569,7 +407,7 @@ async function checkServerHealth(){
     throw new Error('HTTP ' + res.status);
   }catch(e){
     banner.style.display = 'block';
-    banner.innerHTML = '로컬 서버에 연결할 수 없습니다. <b>260907.서버시작.bat</b>을 더블클릭해서 서버를 켜주세요. (켜져 있는데도 보이면 새로고침 F5)';
+    banner.innerHTML = '지금 분석 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주시고, 계속되면 관리자에게 문의해주세요.';
     return false;
   }
 }
@@ -609,7 +447,7 @@ updateRadiusCalc();
 // 실측 확인: 경로 순서가 일반적인 {z}/{x}/{y}가 아니라 {z}/{y}/{x}임(브이월드 고유 방식).
 // ------------------------------------------------------------------
 function vworldTileLayer(type){
-  const key = localStorage.getItem('key_vworld') || '';
+  const key = mapVworldKey || '';
   const ext = type === 'Satellite' ? 'jpeg' : 'png';
   return L.tileLayer(
     `https://api.vworld.kr/req/wmts/1.0.0/${encodeURIComponent(key)}/${type}/{z}/{y}/{x}.${ext}`,
@@ -636,7 +474,7 @@ const OVERLAY_LAYERS = [
   {group:'기타규제', label:'사업지구(택지개발등)', typename:'lt_c_lhzone', style:'lt_c_lhzone', source:'vworld'},
 ];
 function overlayWmsLayer(def){
-  const key = localStorage.getItem('key_vworld') || '';
+  const key = mapVworldKey || '';
   return L.tileLayer.wms('https://api.vworld.kr/req/wms', {
     layers: def.typename, styles: def.style || def.typename, version: '1.3.0',
     format: 'image/png', transparent: true, key: key, maxZoom: 19, minZoom: 10,
@@ -823,12 +661,14 @@ function fileToBase64(file){
 // 조회 시작 -> /api/analyze 호출
 // ------------------------------------------------------------------
 async function startSearch(){
-  const key = localStorage.getItem('key_vworld');
-  if(!key){ openSettingsModal(); alert('먼저 브이월드 API Key를 입력하고 저장해주세요.'); return; }
+  // 2026-09-17: 분석에 쓰는 브이월드 키는 서버가 관리하므로(방문자에게 요구하지 않음)
+  // 여기서 더 이상 키 유무를 확인하지 않는다 — 서버 쪽 키가 없으면 /api/analyze 응답의
+  // error 필드로 알려준다(아래 결과 처리에서 그대로 표시됨).
+  const key = mapVworldKey;
   const ok = await checkServerHealth();
-  if(!ok){ alert('로컬 서버에 연결되지 않았습니다. 260907.서버시작.bat 을 실행해주세요.'); return; }
+  if(!ok){ alert('지금 분석 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.'); return; }
 
-  let cfg = { vkey: key };
+  let cfg = { vkey: key, ecoKey: localStorage.getItem('key_ecograde') || '' };
   let businessType = '';
   if(currentMode === 'jibun'){
     const jibun = document.getElementById('input-jibun').value.trim();
@@ -892,7 +732,7 @@ async function startSearch(){
 // 선(線) 모드 — 여러 지점을 각각 독립적으로 반경 검색해서 번호별 요약표로 보여줌.
 // 특정 번호를 클릭하면 그 지점의 전체 상세결과(위치도·편입지번표 등)를 아래에 그대로 표시.
 async function startLineBatchSearch(businessType){
-  const key = localStorage.getItem('key_vworld');
+  const key = mapVworldKey;
   const points = drawPoints.map((p,i) => ({n:i+1, lat:p.lat, lng:p.lng, radius:p.radius}));
 
   document.getElementById('btn-search').disabled = true;
@@ -904,7 +744,7 @@ async function startLineBatchSearch(businessType){
   try{
     for(const p of points){
       document.getElementById('loading').innerHTML = `<span class="spinner"></span>지점 #${p.n}/${points.length}(반경 ${p.radius}m) 조회 중…`;
-      const cfg = {vkey: key, mode:'radius', lat:p.lat, lon:p.lng, radiusM:p.radius, businessType};
+      const cfg = {vkey: key, ecoKey: localStorage.getItem('key_ecograde') || '', mode:'radius', lat:p.lat, lon:p.lng, radiusM:p.radius, businessType};
       const res = await fetch(API_BASE + '/api/analyze', {method:'POST', headers:{'Content-Type':'application/json', 'ngrok-skip-browser-warning':'1'}, body: JSON.stringify(cfg)});
       const data = await res.json();
       batchResults.push({n: p.n, lat: p.lat, lng: p.lng, radius: p.radius, data, error: data.error || null});
@@ -1028,8 +868,8 @@ function renderResults(data, businessType){
 let powerGridCenter = null; // {lat, lon} — 마지막 조회 결과의 중심좌표(반경 재조회용)
 function renderPowerGridInfo(data){
   const card = document.getElementById('power-grid-card');
-  const kepcoKey = localStorage.getItem('key_kepco');
-  if(!kepcoKey){ card.style.display = 'none'; return; }
+  // 2026-09-17: 한국전력공사 키도 서버가 관리하므로(방문자는 신경 쓸 필요 없음) 카드를
+  // 항상 보여준다 — 서버에 키가 설정 안 돼 있으면 조회 시 서버가 에러 메시지로 알려줌.
   card.style.display = 'block';
   const center = data.detailCenterWgs84; // [lon, lat]
   if(!center){
@@ -1097,16 +937,14 @@ function renderPowerGridOnMap(respData, radiusKm){
 }
 async function searchPowerGridRadius(){
   const el = document.getElementById('power-grid-body');
-  const kepcoKey = localStorage.getItem('key_kepco');
-  const vkey = localStorage.getItem('key_vworld');
-  if(!powerGridCenter || !kepcoKey) return;
+  if(!powerGridCenter) return;
   const radiusKm = parseFloat(document.getElementById('power-grid-radius').value) || 5;
   el.innerHTML = `<div class="hint"><span class="spinner" style="width:12px;height:12px;border-width:2px;"></span>반경 ${radiusKm}km 내 조회 중(한전 데이터가 없으면 자동으로 범위를 넓혀 재검색합니다)…</div>`;
   clearPowerGridMapLayers();
   try{
     const res = await fetch(API_BASE + '/api/power-grid-radius', {
       method:'POST', headers:{'Content-Type':'application/json', 'ngrok-skip-browser-warning':'1'},
-      body: JSON.stringify({lat: powerGridCenter.lat, lon: powerGridCenter.lon, radiusKm, apiKey: kepcoKey, vkey})
+      body: JSON.stringify({lat: powerGridCenter.lat, lon: powerGridCenter.lon, radiusKm, apiKey: '', vkey: mapVworldKey})
     });
     const data = await res.json();
     if(data.error){ el.innerHTML = `<div class="addr-warn">조회 실패: ${escapeHtml(data.error)}</div>`; return; }
@@ -1175,12 +1013,12 @@ function cadastralWmsUrl(minLon, minLat, maxLon, maxLat, w, h, key){
 
 function renderLocationMap(data){
   const el = document.getElementById('location-map');
-  const key = localStorage.getItem('key_vworld');
+  const key = mapVworldKey;
   const bbox = data.mapBbox;
   const outline = data.boundaryOutlineWgs84 || [];
   if(!bbox){ el.innerHTML = ''; return; }
   if(!key){
-    el.innerHTML = '<div class="hint">브이월드 API Key를 저장하면 이 자리에 실제 지적도 위치도가 표시됩니다.</div>';
+    el.innerHTML = '<div class="hint">위치도를 불러오는 중입니다 — 잠시 후 다시 시도해주세요.</div>';
     return;
   }
 
@@ -1270,8 +1108,8 @@ function openVWorldMapView(lon, lat){
 let resultMapState = null;
 function renderInteractiveMap(data){
   const el = document.getElementById('interactive-map');
-  const key = localStorage.getItem('key_vworld');
-  if(!key){ el.innerHTML = '<div class="hint" style="padding:12px;">브이월드 API Key를 저장하면 인터랙티브 지도가 표시됩니다.</div>'; return; }
+  const key = mapVworldKey;
+  if(!key){ el.innerHTML = '<div class="hint" style="padding:12px;">지도를 불러오는 중입니다 — 잠시 후 다시 시도해주세요.</div>'; return; }
 
   if(resultMapState){ resultMapState.map.remove(); resultMapState = null; }
   el.innerHTML = '';
@@ -1305,6 +1143,7 @@ function renderInteractiveMap(data){
     toggleOverlayLayer(cb);
   });
   renderSetbackOnMap(data, resultMapState);
+  renderEcoGradeOnMap(data, resultMapState);
   setTimeout(() => {
     map.invalidateSize();
     // 이격거리 매칭 시설(최대 600m 밖)이 부지 경계에만 맞춘 초기 화면 밖에 있을 수 있어,
@@ -1389,6 +1228,29 @@ function renderSetbackOnMap(data, state){
   setLegendGroup(state, 'setback', legendItems);
 }
 
+// ------------------------------------------------------------------
+// 생태자연도 등급(1~3등급) 폴리곤을 인터랙티브 지도 위에 등급별 색상으로 표시(2026-09-17
+// 재도입). 공공데이터포털 WFS에서 실제 조회한 폴리곤(gis_worker가 EPSG:5186→WGS84 변환까지
+// 마침) — V-World식 WMS 타일이 아니라 실제 편입면적 계산에 쓰인 것과 같은 폴리곤이라 정확함.
+// ------------------------------------------------------------------
+const ECO_GRADE_COLORS = {'1등급': '#c23b3b', '2등급': '#d99a2b', '3등급': '#2f9e52'};
+function renderEcoGradeOnMap(data, state){
+  const e = data.ecoGradeAnalysis;
+  if(!e || !e.available || !e.outlinesByGrade){ setLegendGroup(state, 'eco', []); return; }
+  const legendItems = [];
+  for(const grade in ECO_GRADE_COLORS){
+    const outline = e.outlinesByGrade[grade];
+    if(!outline || !outline.length) continue;
+    const latlngs = outline.map(([lon,lat]) => [lat,lon]);
+    const layer = L.polygon(latlngs, {color: ECO_GRADE_COLORS[grade], weight: 2, fillOpacity: 0.32})
+      .bindTooltip(`생태자연도 ${grade}`, {sticky: true});
+    layer.addTo(state.map);
+    state.extraLayers.push(layer);
+    legendItems.push({color: ECO_GRADE_COLORS[grade], label: `생태자연도 ${grade}`, shape: 'swatch'});
+  }
+  setLegendGroup(state, 'eco', legendItems);
+}
+
 function renderParcelTable(parcels){
   const cols = ['지번','지목','공부상면적(㎡)','편입면적(㎡)','편입비율','소유구분명','공유자수','개별공시지가(원/㎡)','도로명주소','산지정보(산림청)'];
   let html = '<table><tr>' + cols.map(c=>`<th>${c}</th>`).join('') + '</tr>';
@@ -1443,7 +1305,26 @@ function renderRegSummary(data){
   tiles.push(...categoryTiles('산지구분', data.sanjiClassification, '전체 준보전산지이거나 산지 아님'));
   tiles.push(...categoryTiles('농지구분', data.farmland, '농업진흥지역 기준'));
   tiles.push(...categoryTiles('기타규제', data.otherRegulation, '습지·공유수면·가축사육제한 등'));
-  document.getElementById('reg-summary-body').innerHTML = `<div class="reg-summary">${tiles.join('')}</div>`;
+
+  // 생태자연도(2026-09-17 재도입) — 응답 형태가 다른 카테고리와 달라서(available/reason)
+  // categoryTiles를 그대로 못 쓰고 별도 처리. "해당없음"과 "조회 실패/미설정"을 절대
+  // 같은 문구로 섞지 않는다(이전에 이 둘을 구분 못 해서 오해를 산 전례가 있었음) —
+  // 실패했을 땐 이유를 그대로 보여주고, 진단 정보가 있으면 접이식으로 노출한다.
+  const eco = data.ecoGradeAnalysis;
+  let ecoDebugHtml = '';
+  if(eco && !eco.available){
+    tiles.push(`<div class="reg-card"><div class="t">생태자연도</div><div class="hint">${escapeHtml(eco.reason || '조회 안 됨')}</div></div>`);
+    if(eco.debugAttempts && eco.debugAttempts.length){
+      ecoDebugHtml = `<details style="margin-top:10px;">
+        <summary style="cursor:pointer;font-size:11px;color:var(--muted);">생태자연도 진단 정보(결과가 이상하면 이 부분을 펼쳐서 캡처해주세요)</summary>
+        <pre style="font-size:10px;white-space:pre-wrap;background:var(--bg);padding:8px;border-radius:4px;margin-top:6px;">${escapeHtml(JSON.stringify(eco.debugAttempts, null, 2))}</pre>
+      </details>`;
+    }
+  } else if(eco && eco.available){
+    tiles.push(...categoryTiles('생태자연도', eco.grades, '1~3등급 편입 없음'));
+  }
+
+  document.getElementById('reg-summary-body').innerHTML = `<div class="reg-summary">${tiles.join('')}</div>${ecoDebugHtml}`;
 }
 
 // ------------------------------------------------------------------
